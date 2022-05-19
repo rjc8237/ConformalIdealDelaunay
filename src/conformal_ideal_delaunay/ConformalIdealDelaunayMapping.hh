@@ -295,7 +295,7 @@ public:
     g.setZero(m.n_ind_vertices());
     auto angle_sums = Theta(m, angles);
     for(int i = 0; i < g.rows(); i++)
-      g[i] = m.Th_hat[i] - angle_sums(i);
+      g[i] = (m.fixed_dof[i]) ? 0.0 : m.Th_hat[i] - angle_sums(i);
   }
 
   /**
@@ -402,6 +402,7 @@ public:
    * @param m, mesh data structure
    * @param u, #v vector, per-vertex scale factors
    * @param e, int, halfedge id
+   * @param q, set<int>, set of possible non-Delaunay halfedges
    * @param delaunay_stats struct collecting info for delaunay flips through out the algorithm
    * @param Ptolemy, bool, when true the edge length is updated via ptolemy formula, otherwise using law of cosine.
    * @return bool, true indicates flip succeeds.
@@ -633,6 +634,12 @@ public:
       }
     } // to make it cw on side 2
 
+    // Add edges of the boundary of the triangle flap to the set q
+    q.insert(mc.h0(hjk));
+    q.insert(mc.h0(hki));
+    q.insert(mc.h0(him));
+    q.insert(mc.h0(hmj));
+
     for (int i = 0; i < to_flip.size(); i++)
     {
       if (to_flip[i] == 1)
@@ -684,12 +691,6 @@ public:
           Re = mc.e(mc.R[mc.h0(e)]);
         if (!EdgeFlip(q, m, u, e, 0, delaunay_stats, Ptolemy))
           continue;
-        int hn = mc.n[mc.h0(e)];
-        q.insert(mc.e(hn));
-        q.insert(mc.e(mc.n[hn]));
-        hn = mc.n[mc.h1(e)];
-        q.insert(mc.e(hn));
-        q.insert(mc.e(mc.n[hn]));
         if (type0 == 1 && type1 == 1) // flip mirror edge on sheet 2
         {
           int e = Re;
@@ -697,19 +698,16 @@ public:
             spdlog::info("Negative index");
           if (!EdgeFlip(q, m, u, e, 1, delaunay_stats, Ptolemy))
             continue;
-          int hn = mc.n[mc.h0(e)];
-          q.insert(mc.e(hn));
-          q.insert(mc.e(mc.n[hn]));
-          hn = mc.n[mc.h1(e)];
-          q.insert(mc.e(hn));
-          q.insert(mc.e(mc.n[hn]));
         }
         // checkR();
       }
     }
   }
 
-  static VectorX DescentDirection(const Eigen::SparseMatrix<Scalar>& hessian, const VectorX& grad, int fixed_dof, SolveStats<Scalar>& solve_stats)
+  static VectorX DescentDirection(const Eigen::SparseMatrix<Scalar>& hessian,
+                                  const VectorX& grad,
+                                  const std::vector<bool> &fixed_dof,
+                                  SolveStats<Scalar>& solve_stats)
   {
 
     static Scalar a = 0.0; // Parameter for interpolating from the Newton direction to steepest descent
@@ -718,18 +716,24 @@ public:
     auto hessian_dof_fixed = hessian;
 
     // Set fixed degree of freedom in the gradient and hessian
-    grad_dof_fixed[fixed_dof] = 0;
     for (int k = 0; k < hessian_dof_fixed.outerSize(); ++k)
     {
       for (typename Eigen::SparseMatrix<Scalar>::InnerIterator it(hessian_dof_fixed, k); it; ++it)
       {
-        if ((it.row() == fixed_dof) || (it.col() == fixed_dof))
+        if ((fixed_dof[it.row()]) || (fixed_dof[it.col()]))
         {
           it.valueRef() = 0;
         }
       }
     }
-    hessian_dof_fixed.coeffRef(fixed_dof,fixed_dof) = 1;
+    for (int k = 0; k < grad_dof_fixed.size(); ++k)
+    {
+        if (fixed_dof[k])
+        {
+            grad_dof_fixed[k] = 0;
+            hessian_dof_fixed.coeffRef(k, k) = 1;
+        }
+    }
  
     // Compute corrected descent direction
     while (true)
@@ -1071,7 +1075,7 @@ public:
       // Compute gradient and descent direction from Hessian (with efficient solver)
       Eigen::SparseMatrix<Scalar> hessian;
       Hessian(mc, cot_alpha, hessian);
-      VectorX d = DescentDirection(hessian, currentg, fixed_dof, solve_stats);
+      VectorX d = DescentDirection(hessian, currentg, mc.fixed_dof, solve_stats);
 
       // Terminate if newton decrement sufficiently smalll      
       Scalar newton_decr = d.dot(currentg);
@@ -1142,6 +1146,11 @@ public:
       std::vector<std::string> content = {ss.str()};
       WriteLog(fname, content, header, true);
     }
+
+    // FIXME
+    Gradient(mc, alpha, currentg, solve_stats);
+    std::stringstream ss;
+    std::cout << "Error: " << currentg.cwiseAbs().maxCoeff()  << std::endl;
 
     // map barycentric coordinates from equilateral to scaled triangle
     equilateral_to_scaled(mc.pts, mc.pt_in_f, mc.n, mc.h, mc.to, mc.l, u);
@@ -1467,7 +1476,7 @@ public:
     Gradient(m0, alpha, currentg, s_stats_placeholder);
     Eigen::SparseMatrix<Scalar> hessian;
     Hessian(m0, cot_alpha, hessian);
-    VectorX d = DescentDirection(hessian, currentg, fixed_dof, s_stats_placeholder);
+    VectorX d = DescentDirection(hessian, currentg, m0.fixed_dof, s_stats_placeholder);
 
     // Sample newton decrement
     SampleNewtonDecrement(m0,

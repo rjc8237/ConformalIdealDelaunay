@@ -40,6 +40,9 @@
 #include "ConformalIdealDelaunayMapping.hh"
 #include "Halfedge.hh"
 #include "Layout.hh"
+#ifdef WITH_MPFR
+#include "check_flip.hh"
+#endif
 #include <igl/boundary_loop.h>
 #include <igl/is_border_vertex.h>
 #include <igl/edges.h>
@@ -59,7 +62,7 @@
  */
 template <typename Scalar>
 Mesh<Scalar>
-FV_to_double(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const std::vector<Scalar> &Theta_hat, std::vector<int>& vtx_reindex, std::vector<int>& indep_vtx, std::vector<int>& dep_vtx, std::vector<int>& v_rep, std::vector<int>& bnd_loops){
+FV_to_double(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const std::vector<Scalar> &Theta_hat, std::vector<int>& vtx_reindex, std::vector<int>& indep_vtx, std::vector<int>& dep_vtx, std::vector<int>& v_rep, std::vector<int>& bnd_loops, bool fix_boundary=false){
     Mesh<Scalar> m;
     // Build the NOB representation from the input connectivity
     std::vector<int> next_he;
@@ -84,7 +87,7 @@ FV_to_double(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const std::vect
     // If there is no boundary, create a mesh with trivial reflection information
     if (bnd_loops.size() == 0)
     {
-        int n_v = C.to.size();
+        int n_v = C.out.size();
         int n_he = C.n.size();
 
         // Create trivial reflection information
@@ -104,6 +107,8 @@ FV_to_double(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const std::vect
         m.l = l;
         m.Th_hat = Theta_hat_perm;
         m.v_rep = range(0, n_v);
+        m.fixed_dof = std::vector<bool>(n_v, false);
+        m.fixed_dof[0] = true;
     }
     // If there is boundary, create a double tufted cover with a reflection map
     else
@@ -146,6 +151,19 @@ FV_to_double(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const std::vect
         m.l = l_double;
         m.Th_hat = Theta_hat_double;
         m.v_rep = v_rep;
+
+        // Set the fixed_dof to the first boundary halfedge for symmetric meshes
+        // If fixing boundary, fix all boundary halfedges
+        m.fixed_dof = std::vector<bool>(n_v, false);
+        for (int i = 0; i < n_v_double; ++i)
+        {
+            if (m.to[m.R[m.out[i]]] == i)
+            {
+                m.fixed_dof[m.v_rep[i]] = true;
+                if (!fix_boundary) break;
+            }
+        }
+
     }
     return m;
 }
@@ -171,6 +189,44 @@ std::pair<int,int> count_genus_and_boundary(const Eigen::MatrixXd& V, const Eige
   int eu = nv - ne + nf + n_bd;
   int n_genus = (2-eu)/2;
   return std::make_pair(n_genus, n_bd);
+}
+
+template <typename Scalar>
+void find_origin_endpoints(OverlayMesh<Scalar>& mo, std::vector<std::pair<int, int>>& endpoints){
+
+    endpoints = std::vector<std::pair<int,int>>(mo.n_vertices(), std::make_pair(-1, -1));
+    std::vector<bool> done(mo.n_vertices(), false);
+    for(int i = 0; i < mo.n.size(); i++){
+        if (mo.edge_type[i] != ORIGINAL_EDGE)
+            continue;
+        int j = mo.opp[i];
+        int a = mo.find_end_origin(i);
+        int b = mo.find_end_origin(j);
+        int v0 = mo.to[i], v1 = mo.to[j];
+        if(mo.vertex_type[v0] != ORIGINAL_VERTEX){
+            if(!done[v0]){
+                endpoints[v0] = std::make_pair(a, b);
+                done[v0] = true;
+            }
+        }
+        if(mo.vertex_type[v1] != ORIGINAL_VERTEX){
+            if(!done[v1]){
+                endpoints[v1] = std::make_pair(a, b);
+                done[v1] = true;
+            }
+        }
+    }
+    // sanity check: all new vertices should have non-negative endpoints assigned
+    for(int i = 0; i < mo.n_vertices(); i++){
+        if(mo.vertex_type[i] != ORIGINAL_VERTEX){
+            int a = endpoints[i].first, b = endpoints[i].second;
+            if(a == -1 || b == -1){
+                spdlog::error("new vertex {} has no endpoints assigned!", i);
+                exit(0);
+            }
+        }
+    }
+    
 }
 
 /**
@@ -200,7 +256,8 @@ std::tuple<
            std::vector<int>,                        // pt_fids
            std::vector<std::vector<Scalar>>,        // pt_bcs
            std::vector<int>,                        // vtx_reindex
-           std::vector<std::vector<Scalar>>>        // V_overlay
+           std::vector<std::vector<Scalar>>,        // V_overlay
+           std::vector<std::pair<int,int>>>         // map new vertices to the correct endpoints
 conformal_metric(const Eigen::MatrixXd &V,
                     const Eigen::MatrixXi &F,
                     const std::vector<Scalar> &Theta_hat,
@@ -271,7 +328,9 @@ conformal_metric(const Eigen::MatrixXd &V,
             pt_bcs_out[i].push_back(pt_bcs_scalar[i](j));
         }
     }
-    return std::make_tuple(mo, u, pt_fids, pt_bcs_out, vtx_reindex, V_overlay); 
+    std::vector<std::pair<int,int>> endpoints;
+    find_origin_endpoints(mo, endpoints);
+    return std::make_tuple(mo, u, pt_fids, pt_bcs_out, vtx_reindex, V_overlay, endpoints); 
 
 }
 
@@ -557,8 +616,10 @@ std::tuple<
         std::vector<Scalar>,                // v_out
         std::vector<std::vector<int>>,      // F_out
         std::vector<std::vector<int>>,      // FT_out
-        std::vector<int>>                   // Fn_to_F
+        std::vector<int>,                   // Fn_to_F
+        std::vector<std::pair<int,int>>>    // remapped endpoints relationship
 get_FV_FTVT(OverlayMesh<Scalar> &mo,
+            std::vector<std::pair<int,int>>& endpoints,
             std::vector<bool> &is_cut_o,
             const std::vector<std::vector<Scalar>> v3d, 
             const std::vector<Scalar> u_o,
@@ -634,6 +695,7 @@ get_FV_FTVT(OverlayMesh<Scalar> &mo,
     std::vector<std::vector<int>> F_out;
     std::vector<std::vector<int>> FT_out;
     std::vector<int> f_remap; // map each face in F_out to mo
+    auto remapped_endpoints = std::vector<std::pair<int,int>>(to_group.size(), std::make_pair(-1, -1));
     for (int i = 0; i < mo.h.size(); i++)
     {
         if (f_labels[i] == 2) continue;
@@ -665,13 +727,21 @@ get_FV_FTVT(OverlayMesh<Scalar> &mo,
         }
     }
 
+    for(int i = 0; i < endpoints.size(); i++){
+        int a = endpoints[i].first, b = endpoints[i].second;
+        if(a != -1 && b != -1){
+            if(which_to_group[i] < remapped_endpoints.size() && which_to_group[i] != -1) 
+                remapped_endpoints[which_to_group[i]] = std::make_pair(which_to_group[a], which_to_group[b]);
+        }
+    }
+
     // after drop the second copy - update face map
     std::vector<int> _Fn_to_F(F_out.size(), -1);
     for(int i = 0; i < F_out.size(); i++)
          _Fn_to_F[i] = Fn_to_F[f_remap[i]];
     Fn_to_F = _Fn_to_F;
 
-    return std::make_tuple(v3d_out, u_o_out, v_o_out, F_out, FT_out, Fn_to_F);
+    return std::make_tuple(v3d_out, u_o_out, v_o_out, F_out, FT_out, Fn_to_F, remapped_endpoints);
 
 }
 
@@ -1015,7 +1085,8 @@ std::tuple<
         std::vector<Scalar>,                    // layout u (per vertex)
         std::vector<Scalar>,                    // layout v (per vertex)
         std::vector<std::vector<int>>,          // FT_out
-        std::vector<int>>                       // Fn_to_F
+        std::vector<int>,                       // Fn_to_F
+        std::vector<std::pair<int,int>>>        // map from new vertices to original endpoints
 conformal_parametrization_VL(const Eigen::MatrixXd &V,
                     const Eigen::MatrixXi &F,
                     const std::vector<Scalar> &Theta_hat,
@@ -1055,10 +1126,11 @@ conformal_parametrization_VL(const Eigen::MatrixXd &V,
     std::vector<Scalar> u = std::get<1>(conformal_out);
     std::vector<int> vtx_reindex = std::get<4>(conformal_out);
     auto V_overlay = std::get<5>(conformal_out);
+    auto endpoints = std::get<6>(conformal_out);
 
     if(mo.bypass_overlay){
         spdlog::warn("overlay bypassed due to numerical issue or as instructed.");
-        return std::make_tuple(std::vector<std::vector<Scalar>>(), std::vector<std::vector<int>>(), std::vector<Scalar>(), std::vector<Scalar>(), std::vector<std::vector<int>>(), std::vector<int>());
+        return std::make_tuple(std::vector<std::vector<Scalar>>(), std::vector<std::vector<int>>(), std::vector<Scalar>(), std::vector<Scalar>(), std::vector<std::vector<int>>(), std::vector<int>(), std::vector<std::pair<int,int>>());
     }
 
     std::vector<int> f_labels = get_overlay_face_labels(mo);
@@ -1094,13 +1166,14 @@ conformal_parametrization_VL(const Eigen::MatrixXd &V,
     auto is_cut_o = std::get<5>(layout_res);
 
     // get output VF and metric
-    auto FVFT_res = get_FV_FTVT(mo, is_cut_o, V_overlay, u_o, v_o);
+    auto FVFT_res = get_FV_FTVT(mo, endpoints, is_cut_o, V_overlay, u_o, v_o);
     auto v3d = std::get<0>(FVFT_res); 
     auto u_o_out = std::get<1>(FVFT_res);
     auto v_o_out = std::get<2>(FVFT_res);
     auto F_out = std::get<3>(FVFT_res);
     auto FT_out = std::get<4>(FVFT_res);
     auto Fn_to_F = std::get<5>(FVFT_res);
+    auto remapped_endpoints = std::get<6>(FVFT_res);
 
     // v3d_out = v3d^T
     std::vector<std::vector<Scalar>> v3d_out(v3d[0].size());
@@ -1117,6 +1190,7 @@ conformal_parametrization_VL(const Eigen::MatrixXd &V,
     auto u_o_out_copy = u_o_out;
     auto v_o_out_copy = v_o_out;
     auto v3d_out_copy = v3d_out;
+    auto endpoints_out = remapped_endpoints;
     for (int i = 0; i < F_out.size(); i++)
     {
         for (int j = 0; j < 3; j++)
@@ -1137,9 +1211,188 @@ conformal_parametrization_VL(const Eigen::MatrixXd &V,
         v_o_out[vtx_reindex[i]] = v_o_out_copy[i];
         v3d_out[vtx_reindex[i]] = v3d_out_copy[i];
     }
+    for(int i = vtx_reindex.size(); i < endpoints_out.size(); i++)
+    {
+        int a = vtx_reindex[endpoints_out[i].first];
+        int b = vtx_reindex[endpoints_out[i].second];
+        endpoints_out[i] = std::make_pair(a, b);
+    }
+    
+    // check flips in the layout results
+    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> uv_o(u_o_out.size(), 2);
+    Eigen::MatrixXi FT(FT_out.size(), 3);
+    for(int f = 0; f < FT_out.size(); f++)
+        FT.row(f) << FT_out[f][0], FT_out[f][1], FT_out[f][2];
+    for(int i = 0; i < uv_o.rows(); i++)
+        uv_o.row(i) << u_o_out[i], v_o_out[i];
+#ifdef WITH_MPFR
+    spdlog::info("#flip: {}", check_flip(uv_o, FT, true));
+#endif
 
-    return std::make_tuple(v3d_out, F_out, u_o_out, v_o_out, FT_out, Fn_to_F);
+    std::ofstream mf;
+    mf.open(stats_params->output_dir + "/flip_check.csv", std::ios_base::app);
+#ifdef WITH_MPFR
+    mf << stats_params->name << "," << check_flip(uv_o, FT) << std::endl;
+#endif
+    mf.close();
+
+    return std::make_tuple(v3d_out, F_out, u_o_out, v_o_out, FT_out, Fn_to_F, endpoints_out);
 }
+
+
+/*
+template<typename Scalar>
+std::tuple<
+        std::vector<std::vector<Scalar>>,       // V_out
+        std::vector<std::vector<int>>,          // F_out
+        std::vector<Scalar>,                    // layout u (per vertex)
+        std::vector<Scalar>,                    // layout v (per vertex)
+        std::vector<std::vector<int>>,
+        OverlayMesh<Scalar>,
+        std::vector<std::vector<double>>> // FT_out                 
+conformal_parametrization_VL_debug(const Eigen::MatrixXd &V,
+                    const Eigen::MatrixXi &F,
+                    const std::vector<Scalar> &Theta_hat,
+                    std::shared_ptr<AlgorithmParameters> alg_params=nullptr,
+                    std::shared_ptr<LineSearchParameters> ls_params=nullptr,
+                    std::shared_ptr<StatsParameters> stats_params=nullptr)
+{
+    // get cones and bd
+    std::vector<int> cones, bd;
+    std::vector<bool> is_bd = igl::is_border_vertex(F);
+    for (int i = 0; i < is_bd.size(); i++)
+    {
+        if (is_bd[i])
+        {
+            bd.push_back(i);
+        }
+    }
+    bool do_trim = false;
+    auto gb = count_genus_and_boundary(V, F);
+    int n_genus = gb.first, n_bd = gb.second;
+    if((n_genus >= 1 && n_bd != 0) || n_bd > 1){
+        do_trim = true;
+    }
+    for (int i = 0; i < Theta_hat.size(); i++)
+    {
+        if ((!is_bd[i]) && abs(Theta_hat[i] -  2 * M_PI) > 1e-15)
+        {
+            cones.push_back(i);
+        }
+    }
+
+    // do conformal_metric
+    std::vector<int> pt_fids_placeholder;
+    std::vector<Eigen::Matrix<double, 3, 1>> pt_bcs_placeholder;
+    auto conformal_out = conformal_metric(V, F, Theta_hat, pt_fids_placeholder, pt_bcs_placeholder, alg_params, ls_params, stats_params);
+    OverlayMesh<Scalar> mo = std::get<0>(conformal_out);
+    std::vector<Scalar> u = std::get<1>(conformal_out);
+    std::vector<int> vtx_reindex = std::get<4>(conformal_out);
+    auto V_overlay = std::get<5>(conformal_out);
+
+
+    std::vector<int> f_labels = get_overlay_face_labels(mo);
+
+    // reindex cones and bd
+    std::vector<int> vtx_reindex_rev(vtx_reindex.size());
+    for (int i = 0; i < vtx_reindex.size(); i++)
+    {
+        vtx_reindex_rev[vtx_reindex[i]] = i;
+    }
+    for (int i = 0; i < cones.size(); i++)
+    {
+        cones[i] = vtx_reindex_rev[cones[i]];
+    }
+
+    int root = -1;
+    if(alg_params->layout_root != -1)
+        root = vtx_reindex_rev[alg_params->layout_root];
+
+    for (int i = 0; i < bd.size(); i++)
+    {
+        bd[i] = vtx_reindex_rev[bd[i]];
+    }
+    spdlog::info("#bd_vt: {}", bd.size());
+    spdlog::info("#cones: {}", cones.size());
+    spdlog::info("vtx reindex size: {}", vtx_reindex.size());
+    spdlog::info("mc.out size: {}", mo.cmesh().out.size());
+
+    // get layout
+    auto layout_res = get_layout(mo, u, bd, cones, do_trim, root);
+    auto u_o = std::get<3>(layout_res);
+    auto v_o = std::get<4>(layout_res);
+    auto is_cut_o = std::get<5>(layout_res);
+
+    // get output VF and metric
+    auto FVFT_res = get_FV_FTVT(mo, endpoints, is_cut_o, V_overlay, u_o, v_o);
+    auto v3d = std::get<0>(FVFT_res); 
+    auto u_o_out = std::get<1>(FVFT_res);
+    auto v_o_out = std::get<2>(FVFT_res);
+    auto F_out = std::get<3>(FVFT_res);
+    auto FT_out = std::get<4>(FVFT_res);
+    auto Fn_to_F = std::get<5>(FVFT_res);
+    auto remapped_endpoints = std::get<6>(FVFT_res);
+
+    // v3d_out = v3d^T
+    std::vector<std::vector<Scalar>> v3d_out(v3d[0].size());
+    for (int i = 0; i < v3d[0].size(); i++)
+    {
+        v3d_out[i].resize(3);
+        for (int j = 0; j < 3; j++)
+        {
+            v3d_out[i][j] = v3d[j][i];
+        }
+    }
+
+    // reindex back
+    auto u_o_out_copy = u_o_out;
+    auto v_o_out_copy = v_o_out;
+    auto v3d_out_copy = v3d_out;
+    auto endpoints_out = remapped_endpoints;
+    for (int i = 0; i < F_out.size(); i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            if (F_out[i][j] < vtx_reindex.size())
+            {
+                F_out[i][j] = vtx_reindex[F_out[i][j]];
+            }
+            if (FT_out[i][j] < vtx_reindex.size())
+            {
+                FT_out[i][j] = vtx_reindex[FT_out[i][j]];
+            }
+        }
+    }
+    for (int i = 0; i < vtx_reindex.size(); i++)
+    {
+        u_o_out[vtx_reindex[i]] = u_o_out_copy[i];
+        v_o_out[vtx_reindex[i]] = v_o_out_copy[i];
+        v3d_out[vtx_reindex[i]] = v3d_out_copy[i];
+    }
+    for(int i = vtx_reindex.size(); i < endpoints_out.size(); i++)
+    {
+        int a = vtx_reindex[endpoints_out[i].first];
+        int b = vtx_reindex[endpoints_out[i].second];
+        endpoints_out[i] = std::make_pair(a, b);
+    }
+    
+    // check flips in the layout results
+    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> uv_o(u_o_out.size(), 2);
+    Eigen::MatrixXi FT(FT_out.size(), 3);
+    for(int f = 0; f < FT_out.size(); f++)
+        FT.row(f) << FT_out[f][0], FT_out[f][1], FT_out[f][2];
+    for(int i = 0; i < uv_o.rows(); i++)
+        uv_o.row(i) << u_o_out[i], v_o_out[i];
+    spdlog::info("#flip: {}", check_flip(uv_o, FT, true));
+
+    std::ofstream mf;
+    mf.open(stats_params->output_dir + "/flip_check.csv", std::ios_base::app);
+    mf << stats_params->name << "," << check_flip(uv_o, FT) << std::endl;
+    mf.close();
+
+    return std::make_tuple(v3d_out, F_out, u_o_out, v_o_out, FT_out, Fn_to_F, endpoints_out);
+}
+*/
 
 /**
  * Helper function for save mesh data with texture coordinates as obj file
