@@ -92,6 +92,7 @@ struct AlgorithmParameters {
   int max_itr = 500;             // upper bound for newton iterations
   bool bypass_overlay = false;   // avoid overlay computation
   int layout_root = -1;          // select vertex on boundary as root for constructing spanning tree connecting cones
+  bool use_edge_flips = true;    // optimize energy without intrinsic edge flips if false
  };
 
 // Scalar: a floating point type, either double or MPFR
@@ -822,7 +823,8 @@ public:
 
     // Line search
     u += d;
-    MakeDelaunay(m, u, delaunay_stats, solve_stats);
+    if (alg_params.use_edge_flips)
+      MakeDelaunay(m, u, delaunay_stats, solve_stats);
     ComputeAngles(mc, u, alpha, cot_alpha);
 
     int count = 0;
@@ -835,7 +837,8 @@ public:
       d /= 2;
       lambda /= 2; // record changes in lambda as well
       u -= d;
-      MakeDelaunay(m, u, delaunay_stats, solve_stats);
+      if (alg_params.use_edge_flips)
+        MakeDelaunay(m, u, delaunay_stats, solve_stats);
       ComputeAngles(mc, u, alpha, cot_alpha);
       Gradient(mc, alpha, currentg, solve_stats); // update gradient
 
@@ -846,7 +849,8 @@ public:
       {
         u += d; // Use full line step
         lambda *= 2;
-        MakeDelaunay(m, u, delaunay_stats, solve_stats);
+        if (alg_params.use_edge_flips)
+          MakeDelaunay(m, u, delaunay_stats, solve_stats);
         ComputeAngles(mc, u, alpha, cot_alpha);
         Gradient(mc, alpha, currentg, solve_stats); // update gradient
         break;
@@ -924,7 +928,8 @@ public:
 
     // Line search
     u += d;
-    MakeDelaunay(m, u, delaunay_stats, solve_stats);
+    if (alg_params.use_edge_flips)
+      MakeDelaunay(m, u, delaunay_stats, solve_stats);
     ComputeAngles(mc, u, alpha, cot_alpha);
 
     Gradient(mc, alpha, currentg, solve_stats); // Current gradient value
@@ -949,7 +954,8 @@ public:
       d /= 2;
       lambda /= 2; // record backtrack changes in lambda
       u -= d; // Backtrack
-      MakeDelaunay(m, u, delaunay_stats, solve_stats);
+      if (alg_params.use_edge_flips)
+        MakeDelaunay(m, u, delaunay_stats, solve_stats);
       ComputeAngles(mc, u, alpha, cot_alpha);
       Gradient(mc, alpha, currentg, solve_stats);
       new_e = ConformalEquivalenceEnergy(mc, alpha, u);
@@ -1048,7 +1054,7 @@ public:
     Scalar lambda = ls_params.lambda0;
 
     // Optionally use Euclidean flips instead of Ptolemy flips for the initial MakeDelaunay
-    if (!alg_params.initial_ptolemy){
+    if ((!alg_params.initial_ptolemy) && (alg_params.use_edge_flips)) {
       MakeDelaunay(m, u, delaunay_stats, solve_stats, false);
       spdlog::debug("Finish first delaunay non_ptolemy");
       m.garbage_collection();
@@ -1057,7 +1063,7 @@ public:
 
     // step1 apply per triangle the bc map to unit equilateral triangle
     original_to_equilateral(mc.pts, mc.pt_in_f, mc.n, mc.h, mc.l);
-    if (alg_params.initial_ptolemy) {
+    if ((alg_params.initial_ptolemy) && (alg_params.use_edge_flips)) {
       MakeDelaunay(m, u, delaunay_stats, solve_stats, true);
       spdlog::debug("Finish first delaunay ptolemy");
     } 
