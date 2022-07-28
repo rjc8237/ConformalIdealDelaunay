@@ -54,6 +54,7 @@ add_library(conformal_cpp SHARED
   src/conformal_ideal_delaunay/BarycenterMapping.cc
   src/util/check_flip.cc
 )
+target_include_directories(conformal_cpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # build pybind functions
 add_library(conformal_py MODULE
