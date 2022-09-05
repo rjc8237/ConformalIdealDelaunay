@@ -7,26 +7,27 @@ set(DIR_EXT "${CMAKE_CURRENT_SOURCE_DIR}/ext")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src/util")
 
 # enable CGAL if MPFR is needed
-option(LIBIGL_WITH_CGAL                "Use CGAL"           ON)
-option(LIBIGL_WITH_PREDICATES          "Use Predicates"     ON)
+option(LIBIGL_COPYLEFT_CGA        "Use CGAL"           ON)
+option(LIBIGL_PREDICATES          "Use Predicates"     ON)
 
-option(RENDER_TEXTURE                  "Render results"     ON)
+option(RENDER_TEXTURE             "Render results"     ON)
 # enable embree for speeding up texture rendering
-option(LIBIGL_WITH_EMBREE              "Use EMBREE"         ON)
+option(LIBIGL_EMBREE              "Use EMBREE"         ON)
 
 if (RENDER_TEXTURE)
 
-  option(LIBIGL_WITH_OPENGL            "Use OpenGL"         ON)
-  option(LIBIGL_WITH_OPENGL_GLFW       "Use GLFW"           ON)
-  option(LIBIGL_WITH_PNG               "Use png"         ON)
+  option(LIBIGL_OPENGL            "Use OpenGL"         ON)
+  option(LIBIGL_GLFW              "Use GLFW"           ON)
+  option(LIBIGL_PNG               "Use png"         ON)
 
   add_library(plot src/util/plot.cc)
-  target_link_libraries(plot PUBLIC igl::core igl::opengl_glfw)
+  target_link_libraries(plot PUBLIC igl::core igl::glfw)
 
 endif() 
 
-set(LIBIGL_INCLUDE_DIR ${DIR_EXT}/libigl/include)
-find_package(LIBIGL REQUIRED QUIET)
+#set(LIBIGL_INCLUDE_DIR ${DIR_EXT}/libigl/include)
+#find_package(LIBIGL REQUIRED QUIET)
+include(libigl)
 
 add_compile_definitions(PYBIND)
 add_subdirectory(${DIR_EXT}/pybind11)
