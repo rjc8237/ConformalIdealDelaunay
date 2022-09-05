@@ -1156,7 +1156,7 @@ public:
     // FIXME
     Gradient(mc, alpha, currentg, solve_stats);
     std::stringstream ss;
-    std::cout << "Error: " << currentg.cwiseAbs().maxCoeff()  << std::endl;
+    //std::cout << "Error: " << currentg.cwiseAbs().maxCoeff()  << std::endl;
 
     // map barycentric coordinates from equilateral to scaled triangle
     equilateral_to_scaled(mc.pts, mc.pt_in_f, mc.n, mc.h, mc.to, mc.l, u);
