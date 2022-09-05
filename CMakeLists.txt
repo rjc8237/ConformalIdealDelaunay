@@ -7,7 +7,7 @@ set(DIR_EXT "${CMAKE_CURRENT_SOURCE_DIR}/ext")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src/util")
 
 # enable CGAL if MPFR is needed
-option(LIBIGL_COPYLEFT_CGA        "Use CGAL"           ON)
+option(LIBIGL_COPYLEFT_CGAL        "Use CGAL"           ON)
 option(LIBIGL_PREDICATES          "Use Predicates"     ON)
 
 option(RENDER_TEXTURE             "Render results"     ON)
@@ -28,6 +28,7 @@ endif()
 #set(LIBIGL_INCLUDE_DIR ${DIR_EXT}/libigl/include)
 #find_package(LIBIGL REQUIRED QUIET)
 include(libigl)
+find_package(MPFR REQUIRED QUIET)
 
 add_compile_definitions(PYBIND)
 add_subdirectory(${DIR_EXT}/pybind11)
@@ -41,7 +42,7 @@ target_link_libraries(CSM_bin PUBLIC igl::core)
 add_compile_definitions(_USE_MATH_DEFINES)
 
 # load MPFR through cgal
-if (LIBIGL_WITH_CGAL)
+if (LIBIGL_COPYLEFT_CGAL)
   add_compile_definitions(WITH_MPFR)
   include_directories(${MPFR_INCLUDE_DIR})
   include_directories(${GMP_INCLUDE_DIR})
@@ -68,7 +69,7 @@ add_library(conformal_py MODULE
 
 if (RENDER_TEXTURE)
   add_compile_definitions(RENDER_TEXTURE)
-  if (LIBIGL_WITH_EMBREE)
+  if (LIBIGL_EMBREE)
     add_compile_definitions(USE_EMBREE)
     target_link_libraries(conformal_py PRIVATE igl::embree plot)
   else()

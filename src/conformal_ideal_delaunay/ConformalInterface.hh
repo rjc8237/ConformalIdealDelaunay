@@ -1412,12 +1412,12 @@ void write_texture_obj(
     const std::vector<Scalar>& v, 
     const std::vector<std::vector<int>>& Ft)
 {
-    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> V_mat(V.size(), 3), uv(u.size(), 2), CN;
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> V_mat(V.size(), 3), uv(u.size(), 2), CN;
     Eigen::MatrixXi F_mat(F.size(), 3), FN, Ft_mat(Ft.size(), 3);
     for(int i = 0; i < u.size(); i++)
-        uv.row(i) << u[i], v[i];
+        uv.row(i) << (double)(u[i]), (double)(v[i]);
     for(int i = 0; i < V.size(); i++)
-        V_mat.row(i) << V[i][0], V[i][1], V[i][2];
+        V_mat.row(i) << (double)(V[i][0]), (double)(V[i][1]), (double)(V[i][2]);
     for(int i = 0; i < F.size(); i++)
         F_mat.row(i) << F[i][0], F[i][1], F[i][2];
     for(int i = 0; i < Ft.size(); i++)
