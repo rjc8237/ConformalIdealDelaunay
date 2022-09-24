@@ -58,6 +58,7 @@
  * @return m, Mesh data structure, for details check OverlayMesh.hh
  */
 template <typename Scalar>
+static
 Mesh<Scalar>
 FV_to_double(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const std::vector<Scalar> &Theta_hat, std::vector<int>& vtx_reindex, std::vector<int>& indep_vtx, std::vector<int>& dep_vtx, std::vector<int>& v_rep, std::vector<int>& bnd_loops){
     Mesh<Scalar> m;
@@ -157,6 +158,7 @@ FV_to_double(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const std::vect
  * @return n_genus, int, genus of the input mesh
  * @return n_boundary, int, number of boundary loops of the input mesh
  */ 
+static
 std::pair<int,int> count_genus_and_boundary(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F){
   int nv = V.rows();
   int nf = F.rows();
@@ -194,6 +196,7 @@ std::pair<int,int> count_genus_and_boundary(const Eigen::MatrixXd& V, const Eige
  * @return vtx_reindex, dim #v int-vector, stores the correspondence of new vertex id in mesh m to old index in V
  */
 template<typename Scalar>
+static
 std::tuple<
            OverlayMesh<Scalar>,                     // m
            std::vector<Scalar>,                     // u
@@ -287,6 +290,7 @@ conformal_metric(const Eigen::MatrixXd &V,
  * @return v_new updated per corner layout (v coordinates)
  */
 template<typename Scalar>
+static
 void split_overlay(const OverlayMesh<Scalar> &mo, 
               const std::vector<int> &f_labels,
               const std::vector<Scalar> &u_o,
@@ -386,6 +390,7 @@ void split_overlay(const OverlayMesh<Scalar> &mo,
  * @return F_out dim #f*3 vector, each row corresponds to three vertex ids of each facet
  */ 
 template<typename Scalar>
+static
 std::tuple<
         std::vector<std::vector<Scalar>>,   // v3d_out
         std::vector<Scalar>,                // u_o_out
@@ -490,6 +495,7 @@ get_FV(OverlayMesh<Scalar> &mo,
  * @param Fn_to_F map from each overlay mesh face to the id of original mesh face id that contains it
  */ 
 template <typename Scalar>
+static
 void build_face_maps(OverlayMesh<Scalar>& mo, std::vector<int>& Fn_to_F){
     
     Fn_to_F = std::vector<int>(mo.n_faces(), -1);
@@ -551,6 +557,7 @@ void build_face_maps(OverlayMesh<Scalar>& mo, std::vector<int>& Fn_to_F){
 }
 
 template<typename Scalar>
+static
 std::tuple<
         std::vector<std::vector<Scalar>>,   // v3d_out
         std::vector<Scalar>,                // u_out
@@ -692,6 +699,7 @@ get_FV_FTVT(OverlayMesh<Scalar> &mo,
  */ 
  
 template<typename Scalar>
+static
 std::tuple<
         std::vector<int>,                   // n
         std::vector<int>,                   // opp
@@ -792,6 +800,7 @@ conformal_metric_CL(const Eigen::MatrixXd &V,
  * @return l, #f'*3 vector, l[i][j] = length of edge (F[i][j], F[i][(j+1)%3])
  */ 
 template<typename Scalar>
+static
 std::tuple<
         std::vector<std::vector<Scalar>>,       // V_out
         std::vector<std::vector<int>>,          // F_out
@@ -914,6 +923,7 @@ conformal_metric_VL(const Eigen::MatrixXd &V,
  * @return v, dim #he per corner v coordinates of the layout
  */ 
 template<typename Scalar>
+static
 std::tuple<
         std::vector<int>,                   // n
         std::vector<int>,                   // opp
@@ -1009,6 +1019,7 @@ conformal_parametrization_CL(const Eigen::MatrixXd &V,
  * @return v, #v' vector, per vertex v coordinates of the layout
  */ 
 template<typename Scalar>
+static
 std::tuple<
         std::vector<std::vector<Scalar>>,       // V_out
         std::vector<std::vector<int>>,          // F_out
@@ -1151,6 +1162,7 @@ conformal_parametrization_VL(const Eigen::MatrixXd &V,
  * @param Ft, dim #f*3 int matrix, stores the vertex index of texture coordinates for each face
  */ 
 template <typename Scalar>               
+static
 void write_texture_obj(
     std::string fname, 
     const std::vector<std::vector<Scalar>>& V, 

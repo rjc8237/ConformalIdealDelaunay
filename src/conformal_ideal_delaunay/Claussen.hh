@@ -137,6 +137,7 @@ static	double	cl5pi6[19] =
  * evaluate a chebyshev series
  * adapted from fortran csevl
  */
+static
 double
 csevl( double x, double *cs, int n )
 {
@@ -171,6 +172,7 @@ inits( double *series, int n, double eta )
   return n++;
 }
 
+static
 double
 claussen( double x )
 {
