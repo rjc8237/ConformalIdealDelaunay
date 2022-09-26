@@ -781,6 +781,10 @@ conformal_metric_CL(const Eigen::MatrixXd &V,
                     std::shared_ptr<LineSearchParameters> ls_params=nullptr,
                     std::shared_ptr<StatsParameters> stats_params=nullptr)
 {
+    if(alg_params == nullptr) alg_params = std::make_shared<AlgorithmParameters>();
+    if(ls_params    == nullptr) ls_params    = std::make_shared<LineSearchParameters>();
+    if(stats_params == nullptr) stats_params = std::make_shared<StatsParameters>();
+
     // get cones and bd
     std::vector<int> cones, bd;
     std::vector<bool> is_bd = igl::is_border_vertex(F);
@@ -882,6 +886,10 @@ conformal_metric_VL(const Eigen::MatrixXd &V,
                     std::shared_ptr<LineSearchParameters> ls_params=nullptr,
                     std::shared_ptr<StatsParameters> stats_params=nullptr)
 {
+    if(alg_params == nullptr) alg_params = std::make_shared<AlgorithmParameters>();
+    if(ls_params    == nullptr) ls_params    = std::make_shared<LineSearchParameters>();
+    if(stats_params == nullptr) stats_params = std::make_shared<StatsParameters>();
+    
     // get cones and bd
     std::vector<int> cones, bd;
     std::vector<bool> is_bd = igl::is_border_vertex(F);
