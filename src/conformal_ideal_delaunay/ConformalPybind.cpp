@@ -107,7 +107,10 @@ PYBIND11_MODULE(conformal_py, m)
     .def_readwrite("R", &OverlayProblem::Mesh<double>::R)
     .def_readwrite("type", &OverlayProblem::Mesh<double>::type)
     .def_readwrite("Th_hat", &OverlayProblem::Mesh<double>::Th_hat)
-    .def_readwrite("l", &OverlayProblem::Mesh<double>::l);
+    .def_readwrite("l", &OverlayProblem::Mesh<double>::l)
+    .def_readwrite("v_rep", &OverlayProblem::Mesh<double>::v_rep)
+    .def_readwrite("fixed_dof", &OverlayProblem::Mesh<double>::fixed_dof);
+
 #ifdef WITH_MPFR
   pybind11::class_<OverlayProblem::Mesh<mpfr::mpreal>>(m, "Mesh_mpf")
     .def_readwrite("n", &OverlayProblem::Mesh<mpfr::mpreal>::n)

@@ -89,6 +89,7 @@ namespace OverlayProblem{
         std::vector<int> v_rep;             // identification map of vertices for tufted cover
 
         std::vector<Scalar> Th_hat;         
+        std::vector<bool> fixed_dof;        // vertices at which to leave scale factor fixed and ignore angle constraint
 
         // vectors to store sampled points
         std::vector<Pt<Scalar>> pts;

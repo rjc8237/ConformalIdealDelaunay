@@ -41,11 +41,12 @@
 #include <vector>
 #include <igl/cat.h>
 #include <igl/boundary_loop.h>
-#include "../util/plot.h"
+#include "../util/plot.hh"
 
 typedef std::tuple< Eigen::Matrix4f,
                     Eigen::Matrix4f,
                     Eigen::Vector4f > camera_info;
+static
 
 std::tuple<std::vector<std::vector<int>>,
            std::vector<std::vector<Eigen::Vector3d>>>
@@ -129,6 +130,7 @@ get_pt_mat(camera_info cam,
   return std::make_tuple(fid_mat, bc_mat);
 }
 
+static
 std::tuple<camera_info,
            Eigen::MatrixXd,
            Eigen::MatrixXi,

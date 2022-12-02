@@ -100,6 +100,7 @@ void bnd_face_list(const std::vector<int> &next_he,
 
 
 template <class T>
+static
 void flatten(const std::vector<std::vector<T>> &arr,
              std::vector<T> &arr_flat)
 {
@@ -176,6 +177,7 @@ void create_tufted_cover(const std::vector<char> &type,
 
 
 template <typename T>
+static
 void permute(std::vector<T> &arr,
              const std::vector<int> &perm)
 {
@@ -194,6 +196,7 @@ void permute(std::vector<T> &arr,
  * @return: void
  */
 template <typename Scalar>
+static
 void compute_l_from_vertices(const Connectivity &C,
                              const Eigen::MatrixXd &V,
                              const std::vector<int> &vtx_reindex,
