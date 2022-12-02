@@ -7,7 +7,7 @@ set(DIR_EXT "${CMAKE_CURRENT_SOURCE_DIR}/ext")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src/util")
 
 # enable CGAL if MPFR is needed
-option(LIBIGL_COPYLEFT_CGAL        "Use CGAL"           ON)
+option(LIBIGL_COPYLEFT_CGAL        "Use CGAL"           OFF)
 option(LIBIGL_PREDICATES          "Use Predicates"     ON)
 
 option(RENDER_TEXTURE             "Render results"     ON)
