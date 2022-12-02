@@ -41,30 +41,35 @@ target_link_libraries(CSM_bin PUBLIC igl::core)
 # added for M_PI definition
 add_compile_definitions(_USE_MATH_DEFINES)
 
+# set core conformal source files
+set(conformal_sources
+  src/conformal_ideal_delaunay/Halfedge.cc
+  src/conformal_ideal_delaunay/OverlayMesh.cc
+  src/conformal_ideal_delaunay/BarycenterMapping.cc
+)
+
 # load MPFR through cgal
 if (LIBIGL_COPYLEFT_CGAL)
   add_compile_definitions(WITH_MPFR)
   include_directories(${MPFR_INCLUDE_DIR})
   include_directories(${GMP_INCLUDE_DIR})
   link_directories(${MPFR_LIBRARIES_DIR})
+  set(conformal_sources
+    ${conformal_sources}
+    src/util/check_flip.cc
+  )
 endif()
 
 # only wrap cpp impl - could be used directly w/o pybind
 add_library(conformal_cpp SHARED   
-  src/conformal_ideal_delaunay/Halfedge.cc
-  src/conformal_ideal_delaunay/OverlayMesh.cc
-  src/conformal_ideal_delaunay/BarycenterMapping.cc
-  src/util/check_flip.cc
+  ${conformal_sources}
 )
 target_include_directories(conformal_cpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # build pybind functions
 add_library(conformal_py MODULE
-  src/conformal_ideal_delaunay/Halfedge.cc
-  src/conformal_ideal_delaunay/OverlayMesh.cc
-  src/conformal_ideal_delaunay/BarycenterMapping.cc
+  ${conformal_sources}
   src/conformal_ideal_delaunay/ConformalPybind.cpp
-  src/util/check_flip.cc
 )
 
 if (RENDER_TEXTURE)
