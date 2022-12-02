@@ -46,6 +46,7 @@ set(conformal_sources
   src/conformal_ideal_delaunay/Halfedge.cc
   src/conformal_ideal_delaunay/OverlayMesh.cc
   src/conformal_ideal_delaunay/BarycenterMapping.cc
+  src/conformal_ideal_delaunay/ConformalInterface.hh
 )
 
 # load MPFR through cgal
