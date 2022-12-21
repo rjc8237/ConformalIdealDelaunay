@@ -72,7 +72,6 @@ int count_valence(const std::vector<int> &n, const std::vector<int> &opp, int h0
 * @return is_cut_h #h vector, mark whether the current halfedge is part of cut-to-singularity(when true)
 */
 template <typename Scalar>
-static
 std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>>
 compute_layout(Mesh<Scalar> &m, const std::vector<Scalar> &u, std::vector<bool>& is_cut_h, int start_h = -1)
 {
@@ -245,7 +244,6 @@ compute_layout(Mesh<Scalar> &m, const std::vector<Scalar> &u, std::vector<bool>&
  * @param root, (optional) index of a boundary vertex, when not -1, this will be the only intersection of the cut to singularity edges with boundary
  */
 template <typename Scalar>
-static
 void connect_to_singularities(OverlayMesh<Scalar>& m_o, const std::vector<int>& f_labels, const std::vector<int>& bd, const std::vector<int>& singularities, std::vector<bool>& is_cut_o, int root = -1){
     
     int n_v = m_o.out.size();
@@ -354,7 +352,6 @@ void connect_to_singularities(OverlayMesh<Scalar>& m_o, const std::vector<int>& 
  */
 
 template <typename Scalar>
-static
 void triangulate_polygon_mesh(Mesh<Scalar>& m, const std::vector<Scalar>& u, const std::vector<Scalar>& v, std::vector<int>& f_labels){
     int n_f0 = m.n_faces();
     spdlog::info("initial f size: {}", n_f0);
@@ -447,7 +444,6 @@ void triangulate_polygon_mesh(Mesh<Scalar>& m, const std::vector<Scalar>& u, con
  * @param is_cut (in/out) cut edge marks
  */
 template <typename Scalar>
-static
 void trim_open_branch(OverlayMesh<Scalar>& m_o, std::vector<int>& f_labels, std::vector<int>& singularities, std::vector<bool>& is_cut){
   bool any_trimmed = true;
   int n_trimmed = 0;
@@ -721,7 +717,6 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>,
  *         _u_o, _v_o, is_cut_h (per-corner u/v assignment of overlay mesh and marked cut edges)
  */
 template <typename Scalar>
-static
 std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>,
            std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>> get_layout(OverlayMesh<Scalar> &m_o, const std::vector<Scalar> &u_vec, std::vector<int> bd, std::vector<int> singularities, bool do_trim = false, int root=-1)
 {

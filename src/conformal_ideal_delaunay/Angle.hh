@@ -53,7 +53,6 @@
  * @return Scalar interior angle at 2 in radian
  */
 
-static
 template <typename Scalar>
 Scalar angle(Scalar l12, Scalar l23, Scalar l31){
   const Scalar t31 = +l12+l23-l31,

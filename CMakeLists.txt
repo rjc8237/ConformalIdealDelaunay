@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(ConformalIdealDelaunay)
 
+add_compile_options(-fPIC)
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(DIR_EXT "${CMAKE_CURRENT_SOURCE_DIR}/ext")
 
