@@ -144,6 +144,26 @@
   #define MPREAL_PERMISSIVE_EXPR
 #endif
 
+// hack to fix a problem with members of mpreal below with the same name
+// redefining macros to make sure these refer explicitly to the structs defined in mpfr.h
+#define MPFR_SRCPTR(x) ((::mpfr_srcptr) (0 ? (x) : (::mpfr_srcptr) (x)))
+#if __GNUC__ > 2 || __GNUC_MINOR__ >= 95
+#define mpfr_set(a,b,r)                         \
+  __extension__ ({                              \
+      ::mpfr_srcptr _p = (b);                     \
+      mpfr_set4(a,_p,r,MPFR_SIGN(_p));          \
+    })
+#endif// hack to fix a problem with members of mpreal below with the same name
+// redefining macros to make sure these refer explicitly to the structs defined in mpfr.h
+#define MPFR_SRCPTR(x) ((::mpfr_srcptr) (0 ? (x) : (::mpfr_srcptr) (x)))
+#if __GNUC__ > 2 || __GNUC_MINOR__ >= 95
+#define mpfr_set(a,b,r)                         \
+  __extension__ ({                              \
+      ::mpfr_srcptr _p = (b);                     \
+      mpfr_set4(a,_p,r,MPFR_SIGN(_p));          \
+    })
+#endif
+
 namespace mpfr {
 
 class mpreal {
