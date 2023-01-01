@@ -27,12 +27,14 @@ endif()
 
 #set(LIBIGL_INCLUDE_DIR ${DIR_EXT}/libigl/include)
 #find_package(LIBIGL REQUIRED QUIET)
+add_compile_definitions(PYBIND)
 include(libigl)
+include(pybind11)
+include(spdlog)
 find_package(MPFR REQUIRED QUIET)
 
-add_compile_definitions(PYBIND)
-add_subdirectory(${DIR_EXT}/pybind11)
-add_subdirectory(${DIR_EXT}/spdlog)
+#add_subdirectory(${DIR_EXT}/pybind11)
+#add_subdirectory(${DIR_EXT}/spdlog)
 
 # for comparison - wrapper for comformal-similarity-map
 add_executable(CSM_bin src/conformal_seamless_similarity/CSM.cpp)
