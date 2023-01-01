@@ -77,7 +77,7 @@ if (RENDER_TEXTURE)
   endif()
 endif()
 
-target_link_libraries(conformal_cpp PUBLIC igl::core spdlog::spdlog igl::predicates ${MPFR_LIBRARIES})
+target_link_libraries(conformal_cpp PRIVATE igl::core spdlog::spdlog igl::predicates ${MPFR_LIBRARIES})
 target_link_libraries(conformal_py PUBLIC igl::core pybind11::module igl::predicates spdlog::spdlog ${MPFR_LIBRARIES})
 set_target_properties(conformal_py PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/py)
 set_target_properties(conformal_py PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}")
