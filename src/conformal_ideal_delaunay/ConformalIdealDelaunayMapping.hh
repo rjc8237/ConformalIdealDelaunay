@@ -774,7 +774,7 @@ public:
       else if (a == 0)
       {
         a = 1; // We did not try the correction yet, start from arbitrary value 1
-        spdlog::info(" Starting correction.");
+        spdlog::info(" Starting Hessian correction.");
       }
       else
       {
@@ -1563,6 +1563,7 @@ public:
     double th_hat_sum = 0.0;
     for(auto t: m.Th_hat)
       th_hat_sum += t;
+    spdlog::info("Fixing Guass-Bonnet error of {}", th_hat_sum - targetsum);
     m.Th_hat[0] -= (th_hat_sum - targetsum);
   }
 
