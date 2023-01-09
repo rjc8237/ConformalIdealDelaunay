@@ -174,7 +174,7 @@ void FV_to_NOB(const std::vector<std::vector<int>> &F,
         {
             int vn = F[i][(j + 1)%3];
             int vp = F[i][(j + 2)%3];
-            int he = vv2he.coeffRef(vp, vn) - 1;
+            int he = vv2he.coeffRef(vn, vp) - 1;
             corner_to_he[i][j] = he;
             he_to_corner[he] = std::make_pair(i, j);
         }
