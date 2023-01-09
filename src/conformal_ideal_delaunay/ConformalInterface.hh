@@ -48,6 +48,24 @@
 #include <igl/edges.h>
 #include <igl/writeOBJ.h>
 
+
+/**
+ * @brief Given a closed mesh, check the lengths of paired halfedges are consistent.
+ * 
+ * @param m, mesh to check
+ */
+template <typename Scalar>
+bool check_length_consistency(
+    const Mesh<Scalar> &m
+) {
+    for (size_t he = 0; he < m.n_halfedges(); ++he)
+    {
+        if (abs(m.l[he] - m.l[m.opp[he]]) > 1e-12) return false;
+    }
+
+    return true;
+}
+
 /**
  * Convert triangle mesh in V, F format to halfedge structure.
  * 
@@ -209,6 +227,14 @@ FV_to_double(
         }
 
     }
+
+    // Check for consistency of lengths
+    if (!check_length_consistency(m))
+    {
+        spdlog::error("Lengths of input mesh metric are not consistent across edges");
+        return Mesh<Scalar>();
+    }
+
     return m;
 }
 

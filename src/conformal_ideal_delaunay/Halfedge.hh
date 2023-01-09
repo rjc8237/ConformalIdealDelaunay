@@ -227,7 +227,6 @@ void compute_l_from_vertices(const Connectivity &C,
     }
 }
 
-
 /**
  * Infer the initial edge lengths from uv vertices positions.
  * @params: uv, #v*dim matrix, represents coordinates for each vertex
