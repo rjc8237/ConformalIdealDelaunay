@@ -49,6 +49,33 @@
 #include <igl/writeOBJ.h>
 
 
+  /**
+   * Given the prescribed per-vertex angle sum, modify the angle sum at first vertex, 
+   * to make sure Gauss-Bonnet is respected up to numerical error.
+   * @param m Mesh data structure
+   * @return void
+   */
+template <typename Scalar>
+void GaussBonnetCorrection(Mesh<Scalar>& m)
+{    
+    Scalar pi;
+#ifdef WITH_MPFR
+    if (std::is_same<Scalar, mpfr::mpreal>::value)
+      pi = Scalar(mpfr::const_pi());
+    else
+      pi = Scalar(M_PI);
+#else
+      pi = Scalar(M_PI);
+#endif
+    int double_genus = 2 - (m.n_vertices() - m.n_edges() + m.n_faces());
+    Scalar targetsum = pi * (2 * m.n_vertices() - 2 * (2 - double_genus));
+    Scalar th_hat_sum = 0.0;
+    for(auto t: m.Th_hat)
+      th_hat_sum += t;
+    spdlog::info("Fixing Guass-Bonnet error of {}", th_hat_sum - targetsum);
+    m.Th_hat[0] -= (th_hat_sum - targetsum);
+}
+
 /**
  * @brief Given a closed mesh, check the lengths of paired halfedges are consistent.
  * 
@@ -225,7 +252,6 @@ FV_to_double(
             // Set cone as fixed dof
             m.fixed_dof[permuted_vi] = true;
         }
-
     }
 
     // Check for consistency of lengths
@@ -235,6 +261,8 @@ FV_to_double(
         return Mesh<Scalar>();
     }
 
+    // Correct Gauss-Bonnet error
+    GaussBonnetCorrection(m);
     return m;
 }
 

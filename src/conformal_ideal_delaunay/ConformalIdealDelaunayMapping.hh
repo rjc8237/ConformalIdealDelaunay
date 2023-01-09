@@ -1541,33 +1541,6 @@ public:
   }
 
   /**
-   * Given the prescribed per-vertex angle sum, modify the angle sum at first vertex, 
-   * to make sure Gauss-Bonnet is respected up to numerical error.
-   * @param m Mesh data structure
-   * @return void
-   */
-  static void GaussBonnetCorrection(Mesh<Scalar>& m)
-  {
-    
-    Scalar pi;
-#ifdef WITH_MPFR
-    if (std::is_same<Scalar, mpfr::mpreal>::value)
-      pi = Scalar(mpfr::const_pi());
-    else
-      pi = Scalar(M_PI);
-#else
-      pi = Scalar(M_PI);
-#endif
-    int double_genus = 2 - (m.n_vertices() - m.n_edges() + m.n_faces());
-    Scalar targetsum = pi * (2 * m.n_vertices() - 2 * (2 - double_genus));
-    double th_hat_sum = 0.0;
-    for(auto t: m.Th_hat)
-      th_hat_sum += t;
-    spdlog::info("Fixing Guass-Bonnet error of {}", th_hat_sum - targetsum);
-    m.Th_hat[0] -= (th_hat_sum - targetsum);
-  }
-
-  /**
    * Logging function, to write list of strings to given file, possibly with header if the file is empty.
    * @param fname, the filename to write log to.
    * @param v, vector of strings to be written to file.
