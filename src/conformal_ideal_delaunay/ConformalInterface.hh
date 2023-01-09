@@ -1155,41 +1155,26 @@ conformal_parametrization_CL(const Eigen::MatrixXd &V,
     return std::make_tuple(n_new, opp_new, u_new, v_new);
 }
 
-
-/**
- * 2(b) (V,F,u,v)
- * @param V dim #v*3 matrix, each row corresponds to mesh vertex coordinates
- * @param F dim #f*3 matrix, each row corresponds to three vertex ids of each facet
- * @param Theta_hat dim #v vector, each element is the prescribed angle sum at each vertex
- * @param alg_params, optional, algorithm parameters, for details check ConformalIdealDelaunayMapping.hh
- * @param ls_params, optional, line search parameters, for details check ConformalIdealDelaunayMapping.hh
- * @param stats_params, optional, statistic parameters, for details check ConformalIdealDelaunayMapping.hh
- * @return V_out, #v'*3 vector, vertex coordinates
- * @return F_out, #f'*3 vector, each row corresponds to three vertex ids of each facet
- * @return u, #v' vector, per vertex u coordinates of the layout
- * @return v, #v' vector, per vertex v coordinates of the layout
- */ 
 template<typename Scalar>
-static
 std::tuple<
         std::vector<std::vector<Scalar>>,       // V_out
         std::vector<std::vector<int>>,          // F_out
         std::vector<Scalar>,                    // layout u (per vertex)
         std::vector<Scalar>,                    // layout v (per vertex)
         std::vector<std::vector<int>>,          // FT_out
+        std::vector<bool>,                      // is_cut_o
         std::vector<int>,                       // Fn_to_F
         std::vector<std::pair<int,int>>>        // map from new vertices to original endpoints
-conformal_parametrization_VL(const Eigen::MatrixXd &V,
-                    const Eigen::MatrixXi &F,
-                    const std::vector<Scalar> &Theta_hat,
-                    std::shared_ptr<AlgorithmParameters> alg_params=nullptr,
-                    std::shared_ptr<LineSearchParameters> ls_params=nullptr,
-                    std::shared_ptr<StatsParameters> stats_params=nullptr)
+overlay_mesh_to_VL(const Eigen::MatrixXd& V,
+                   const Eigen::MatrixXi& F,
+                   const std::vector<Scalar>& Theta_hat,
+                   OverlayMesh<Scalar>& mo,
+                   std::vector<Scalar> &u,
+                   std::vector<std::vector<Scalar>>& V_overlay,
+                   std::vector<int>& vtx_reindex,
+                   std::vector<std::pair<int, int>>& endpoints,
+                   int layout_root=-1)
 {
-    if(alg_params == nullptr) alg_params = std::make_shared<AlgorithmParameters>();
-    if(ls_params    == nullptr) ls_params    = std::make_shared<LineSearchParameters>();
-    if(stats_params == nullptr) stats_params = std::make_shared<StatsParameters>();
-    
     // get cones and bd
     std::vector<int> cones, bd;
     std::vector<bool> is_bd = igl::is_border_vertex(F);
@@ -1214,21 +1199,6 @@ conformal_parametrization_VL(const Eigen::MatrixXd &V,
         }
     }
 
-    // do conformal_metric
-    std::vector<int> pt_fids_placeholder;
-    std::vector<Eigen::Matrix<double, 3, 1>> pt_bcs_placeholder;
-    auto conformal_out = conformal_metric(V, F, Theta_hat, pt_fids_placeholder, pt_bcs_placeholder, alg_params, ls_params, stats_params);
-    OverlayMesh<Scalar> mo = std::get<0>(conformal_out);
-    std::vector<Scalar> u = std::get<1>(conformal_out);
-    std::vector<int> vtx_reindex = std::get<4>(conformal_out);
-    auto V_overlay = std::get<5>(conformal_out);
-    auto endpoints = std::get<6>(conformal_out);
-
-    if(mo.bypass_overlay){
-        spdlog::warn("overlay bypassed due to numerical issue or as instructed.");
-        return std::make_tuple(std::vector<std::vector<Scalar>>(), std::vector<std::vector<int>>(), std::vector<Scalar>(), std::vector<Scalar>(), std::vector<std::vector<int>>(), std::vector<int>(), std::vector<std::pair<int,int>>());
-    }
-
     std::vector<int> f_labels = get_overlay_face_labels(mo);
 
     // reindex cones and bd
@@ -1243,8 +1213,8 @@ conformal_parametrization_VL(const Eigen::MatrixXd &V,
     }
 
     int root = -1;
-    if(alg_params->layout_root != -1)
-        root = vtx_reindex_rev[alg_params->layout_root];
+    if(layout_root != -1)
+        root = vtx_reindex_rev[layout_root];
 
     for (int i = 0; i < bd.size(); i++)
     {
@@ -1313,7 +1283,82 @@ conformal_parametrization_VL(const Eigen::MatrixXd &V,
         int b = vtx_reindex[endpoints_out[i].second];
         endpoints_out[i] = std::make_pair(a, b);
     }
-    
+
+    return std::make_tuple(v3d_out, F_out, u_o_out, v_o_out, FT_out, is_cut_o, Fn_to_F, endpoints_out);
+}
+
+
+/**
+ * 2(b) (V,F,u,v)
+ * @param V dim #v*3 matrix, each row corresponds to mesh vertex coordinates
+ * @param F dim #f*3 matrix, each row corresponds to three vertex ids of each facet
+ * @param Theta_hat dim #v vector, each element is the prescribed angle sum at each vertex
+ * @param alg_params, optional, algorithm parameters, for details check ConformalIdealDelaunayMapping.hh
+ * @param ls_params, optional, line search parameters, for details check ConformalIdealDelaunayMapping.hh
+ * @param stats_params, optional, statistic parameters, for details check ConformalIdealDelaunayMapping.hh
+ * @return V_out, #v'*3 vector, vertex coordinates
+ * @return F_out, #f'*3 vector, each row corresponds to three vertex ids of each facet
+ * @return u, #v' vector, per vertex u coordinates of the layout
+ * @return v, #v' vector, per vertex v coordinates of the layout
+ */ 
+template<typename Scalar>
+static
+std::tuple<
+        std::vector<std::vector<Scalar>>,       // V_out
+        std::vector<std::vector<int>>,          // F_out
+        std::vector<Scalar>,                    // layout u (per vertex)
+        std::vector<Scalar>,                    // layout v (per vertex)
+        std::vector<std::vector<int>>,          // FT_out
+        std::vector<int>,                       // Fn_to_F
+        std::vector<std::pair<int,int>>>        // map from new vertices to original endpoints
+conformal_parametrization_VL(const Eigen::MatrixXd &V,
+                    const Eigen::MatrixXi &F,
+                    const std::vector<Scalar> &Theta_hat,
+                    std::shared_ptr<AlgorithmParameters> alg_params=nullptr,
+                    std::shared_ptr<LineSearchParameters> ls_params=nullptr,
+                    std::shared_ptr<StatsParameters> stats_params=nullptr)
+{
+    if(alg_params == nullptr) alg_params = std::make_shared<AlgorithmParameters>();
+    if(ls_params    == nullptr) ls_params    = std::make_shared<LineSearchParameters>();
+    if(stats_params == nullptr) stats_params = std::make_shared<StatsParameters>();
+
+    // do conformal_metric
+    std::vector<int> pt_fids_placeholder;
+    std::vector<Eigen::Matrix<double, 3, 1>> pt_bcs_placeholder;
+    auto conformal_out = conformal_metric(V, F, Theta_hat, pt_fids_placeholder, pt_bcs_placeholder, alg_params, ls_params, stats_params);
+    OverlayMesh<Scalar> mo = std::get<0>(conformal_out);
+    std::vector<Scalar> u = std::get<1>(conformal_out);
+    std::vector<int> vtx_reindex = std::get<4>(conformal_out);
+    auto V_overlay = std::get<5>(conformal_out);
+    auto endpoints = std::get<6>(conformal_out);
+
+    if(mo.bypass_overlay){
+        spdlog::warn("overlay bypassed due to numerical issue or as instructed.");
+        return std::make_tuple(std::vector<std::vector<Scalar>>(), std::vector<std::vector<int>>(), std::vector<Scalar>(), std::vector<Scalar>(), std::vector<std::vector<int>>(), std::vector<int>(), std::vector<std::pair<int,int>>());
+    }
+
+    // Convert to VL
+    auto vl_out = overlay_mesh_to_VL(
+        V,
+        F,
+        Theta_hat,
+        mo,
+        u,
+        V_overlay,
+        vtx_reindex,
+        endpoints,
+        alg_params->layout_root
+    );
+    auto v3d_out = std::get<0>(vl_out);
+    auto F_out = std::get<1>(vl_out);
+    auto u_o_out = std::get<2>(vl_out);
+    auto v_o_out = std::get<3>(vl_out);
+    auto FT_out = std::get<4>(vl_out);
+    // Skip vl_out[5] = is_cut_o
+    auto Fn_to_F = std::get<6>(vl_out);
+    auto endpoints_out = std::get<7>(vl_out);
+
+
     // check flips in the layout results
     Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> uv_o(u_o_out.size(), 2);
     Eigen::MatrixXi FT(FT_out.size(), 3);
@@ -1332,8 +1377,17 @@ conformal_parametrization_VL(const Eigen::MatrixXd &V,
 #endif
     mf.close();
 
-    return std::make_tuple(v3d_out, F_out, u_o_out, v_o_out, FT_out, Fn_to_F, endpoints_out);
+    return std::make_tuple(
+        v3d_out,
+        F_out,
+        u_o_out,
+        v_o_out,
+        FT_out,
+        Fn_to_F,
+        endpoints_out
+    );
 }
+
 
 
 /*
