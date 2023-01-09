@@ -244,12 +244,19 @@ FV_to_double(
 
     }
 
+    // Get the inverse permutation
+    std::vector<int> vtx_reindex_inverse(vtx_reindex.size());
+    for (int i = 0; i < vtx_reindex.size(); ++i)
+    {
+        vtx_reindex_inverse[vtx_reindex[i]] = i;
+    }
+
     // Also fix all cones explicitly given as fixed
     for (size_t i = 0; i < free_cones.size(); ++i)
     {
         // Get cone after reindexing
         int vi = free_cones[i];
-        int permuted_vi = vtx_reindex[vi];
+        int permuted_vi = vtx_reindex_inverse[vi];
 
         // Set cone as fixed dof
         m.fixed_dof[permuted_vi] = true;
