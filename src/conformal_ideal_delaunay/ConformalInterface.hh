@@ -60,6 +60,7 @@
  * @param indep_vtx, int-vector, stores index of identified independent vertices in the original copy
  * @param dep_vtx, int-vector, stores index of new added vertex copies of the double cover
  * @param v_rep, dim #v int-vector, map independent vertices to unique indices and dependent vertices to their reflection's index
+ * @param free_cones, vertices to let angle vary freely
  * @return m, Mesh data structure, for details check OverlayMesh.hh
  */
 template <typename Scalar>
@@ -76,9 +77,11 @@ FV_to_double(
     std::vector<int>& dep_vtx,
     std::vector<int>& v_rep,
     std::vector<int>& bnd_loops,
+    std::vector<int> free_cones=std::vector<int>(),
     bool fix_boundary=false
 ){
     Mesh<Scalar> m;
+
     // Build the NOB representation from the input connectivity
     std::vector<int> next_he;
     std::vector<int> opp;
@@ -192,6 +195,17 @@ FV_to_double(
                 m.fixed_dof[m.v_rep[i]] = true;
                 if (!fix_boundary) break;
             }
+        }
+
+        // Also fix all cones explicitly given as fixed
+        for (size_t i = 0; i < free_cones.size(); ++i)
+        {
+            // Get cone after reindexing
+            int vi = free_cones[i];
+            int permuted_vi = vtx_reindex[vi];
+
+            // Set cone as fixed dof
+            m.fixed_dof[permuted_vi] = true;
         }
 
     }
