@@ -53,6 +53,8 @@
  * 
  * @param V dim #v*3 matrix, each row corresponds to mesh vertex coordinates
  * @param F dim #f*3 matrix, each row corresponds to three vertex ids of each facet
+ * @param uv dim #v*2 matrix, each row corresponds to mesh vertex uv coordinate
+ * @param F_uv dim #f*3 matrix, each row corresponds to three uv vertex ids of each facet
  * @param Theta_hat dim #v vector, each element is the prescribed angle sum at each vertex
  * @param vtx_reindex, dim #v int-vector, stores the correspondence of new vertex id in mesh m to old index in V
  * @param indep_vtx, int-vector, stores index of identified independent vertices in the original copy
@@ -63,12 +65,26 @@
 template <typename Scalar>
 static
 Mesh<Scalar>
-FV_to_double(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const std::vector<Scalar> &Theta_hat, std::vector<int>& vtx_reindex, std::vector<int>& indep_vtx, std::vector<int>& dep_vtx, std::vector<int>& v_rep, std::vector<int>& bnd_loops, bool fix_boundary=false){
+FV_to_double(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& F_uv,
+    const std::vector<Scalar> &Theta_hat,
+    std::vector<int>& vtx_reindex,
+    std::vector<int>& indep_vtx,
+    std::vector<int>& dep_vtx,
+    std::vector<int>& v_rep,
+    std::vector<int>& bnd_loops,
+    bool fix_boundary=false
+){
     Mesh<Scalar> m;
     // Build the NOB representation from the input connectivity
     std::vector<int> next_he;
     std::vector<int> opp;
-    FV_to_NOB(F, next_he, opp, bnd_loops, vtx_reindex);
+    std::vector<std::vector<int>> corner_to_he;
+    std::vector<std::pair<int, int>> he_to_corner;
+    FV_to_NOB(F, next_he, opp, bnd_loops, vtx_reindex, corner_to_he, he_to_corner);
 
     // Build the connectivity arrays from the NOB arrays
     Connectivity C;
@@ -76,7 +92,7 @@ FV_to_double(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const std::vect
 
     // Build the edge length array from the vertex positions
     std::vector<Scalar> l;
-    compute_l_from_vertices<Scalar>(C, V, vtx_reindex, l);
+    compute_l_from_uv<Scalar>(uv, F_uv, he_to_corner, l);
 
     // Permute the target angles to match the new vertex indices of the halfedge mesh
     std::vector<Scalar> Theta_hat_perm(Theta_hat.size());
@@ -118,7 +134,20 @@ FV_to_double(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const std::vect
         Connectivity C_double;
         std::vector<char> type;
         std::vector<int> R;
-        NOB_to_double(next_he, opp, bnd_loops, C_double, type, R);
+        std::vector<std::vector<int>> corner_to_he_double;
+        std::vector<std::pair<int, int>> he_to_corner_double;
+        NOB_to_double(
+            next_he,
+            opp,
+            bnd_loops,
+            corner_to_he,
+            he_to_corner,
+            C_double,
+            type,
+            R,
+            corner_to_he_double,
+            he_to_corner_double
+        );
         find_indep_vertices(C_double.out, C_double.to, type, R, indep_vtx, dep_vtx, v_rep);
         int n_v = C.out.size();
         int n_v_double = C_double.out.size();
@@ -137,7 +166,7 @@ FV_to_double(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const std::vect
         {
             vtx_reindex_double[i] = vtx_reindex[v_rep[i]];
         }
-        compute_l_from_vertices<Scalar>(C_double, V, vtx_reindex_double, l_double);
+        compute_l_from_uv<Scalar>(uv, F_uv, he_to_corner_double, l_double);
 
         // Create the halfedge structure for the doubled mesh
         m.n = C_double.n;
@@ -283,7 +312,7 @@ conformal_metric(const Eigen::MatrixXd &V,
 
     std::vector<Scalar> u;
     std::vector<int> vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops;
-    Mesh<Scalar> m = FV_to_double(V, F, Theta_hat, vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
+    Mesh<Scalar> m = FV_to_double(V, F, V, F, Theta_hat, vtx_reindex, indep_vtx, dep_vtx, v_rep, bnd_loops);
 
     OverlayMesh<Scalar> mo(m);
 

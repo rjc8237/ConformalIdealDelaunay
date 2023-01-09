@@ -54,19 +54,25 @@ struct Connectivity
 * @param (O)opp, size #h vector, opposite halfedge id
 * @param (B)bnd_loops, collection of boundary face ids.
 * @param vtx_reindex, map from new vertices to old (vertex id in NOB is different from F)
+* @param corner_to_he, map from VF corners to halfedges
+* @param he_to_corner, map from halfedges to VF corners
 * @return void
 */
 void FV_to_NOB(const std::vector<std::vector<int>> &F,
                std::vector<int> &next_he,
                std::vector<int> &opp,
                std::vector<int> &bnd_loops,
-               std::vector<int> &vtx_reindex);
+               std::vector<int> &vtx_reindex,
+               std::vector<std::vector<int>> &corner_to_he,
+               std::vector<std::pair<int, int>> &he_to_corner);
 
 void FV_to_NOB(const Eigen::MatrixXi &F,
                std::vector<int> &next_he,
                std::vector<int> &opp,
                std::vector<int> &bnd_loops,
-               std::vector<int> &vtx_reindex);
+               std::vector<int> &vtx_reindex,
+               std::vector<std::vector<int>> &corner_to_he,
+               std::vector<std::pair<int, int>> &he_to_corner);
 
 /**
 * Extend next_he and opp to add extra halfedges along the boundaries.
@@ -140,9 +146,13 @@ void NOB_to_connectivity(const std::vector<int> &next_he,
 void NOB_to_double(const std::vector<int> &next_he_in,
                    const std::vector<int> &opp_in,
                    const std::vector<int> &bnd_loops_in,
+                   const std::vector<std::vector<int>> &corner_to_he_in,
+                   const std::vector<std::pair<int, int>> &he_to_corner_in,
                    Connectivity &C,
                    std::vector<char> &type,
-                   std::vector<int> &R);
+                   std::vector<int> &R,
+                   std::vector<std::vector<int>> &corner_to_he,
+                   std::vector<std::pair<int, int>> &he_to_corner);
 
 
 /**
@@ -213,6 +223,41 @@ void compute_l_from_vertices(const Connectivity &C,
         
         // Compute the length of the halfedge from the displacement vector
         Eigen::Vector3d vec_disp = v_to - v_fr;
+        l[he] = sqrt(vec_disp.dot(vec_disp));
+    }
+}
+
+
+/**
+ * Infer the initial edge lengths from uv vertices positions.
+ * @params: uv, #v*dim matrix, represents coordinates for each vertex
+ * @params: F_uv, uv faces
+ * @params: he_to_corner, map between halfedges and face corners
+ * @params: l, lengths from the uv mesh
+ * @return: void
+ */
+template <typename Scalar>
+static
+void compute_l_from_uv(const Eigen::MatrixXd &uv,
+                       const Eigen::MatrixXi &F_uv,
+                       const std::vector<std::pair<int, int>> &he_to_corner,
+                       std::vector<Scalar> &l)
+{
+    int n_he = he_to_corner.size();
+    l.resize(n_he);
+
+    for (int he = 0; he < n_he; ++he)
+    {
+        // Get the uv vertices at the tip and tail of the halfedge
+        int face_index = he_to_corner[he].first;
+        int face_vertex_index = he_to_corner[he].second;
+        int vn = F_uv(face_index, (face_vertex_index + 1) % 3);
+        int vp = F_uv(face_index, (face_vertex_index + 2) % 3);
+        Eigen::Vector3d uv_to = uv.row(vn);
+        Eigen::Vector3d uv_fr = uv.row(vp);
+        
+        // Compute the length of the halfedge from the displacement vector
+        Eigen::Vector3d vec_disp = uv_to - uv_fr;
         l[he] = sqrt(vec_disp.dot(vec_disp));
     }
 }

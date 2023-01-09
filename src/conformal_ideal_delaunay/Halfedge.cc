@@ -33,11 +33,14 @@
 #include "Halfedge.hh"
 #include <Eigen/Sparse>
 
+
 void FV_to_NOB(const std::vector<std::vector<int>> &F,
                std::vector<int> &next_he,
                std::vector<int> &opp,
                std::vector<int> &bnd_loops,
-               std::vector<int> &vtx_reindex)
+               std::vector<int> &vtx_reindex,
+               std::vector<std::vector<int>> &corner_to_he,
+               std::vector<std::pair<int, int>> &he_to_corner)
 {
     // Get the cumulative sum of the number of halfedges per face
     int n_f = F.size();
@@ -160,13 +163,31 @@ void FV_to_NOB(const std::vector<std::vector<int>> &F,
 
     // Create boundary loops
     bnd_face_list(next_he, n_he, bnd_loops);
+
+    // Create map from corners to halfedges and the revers
+    corner_to_he.resize(n_f);
+    he_to_corner.resize(n_he);
+    for (size_t i = 0; i < n_f; ++i)
+    {
+        corner_to_he[i].resize(3);
+        for (size_t j = 0; j < 3; ++j)
+        {
+            int vn = F[i][(j + 1)%3];
+            int vp = F[i][(j + 2)%3];
+            int he = vv2he.coeffRef(vp, vn) - 1;
+            corner_to_he[i][j] = he;
+            he_to_corner[he] = std::make_pair(i, j);
+        }
+    }
 }   
 
 void FV_to_NOB(const Eigen::MatrixXi &F,
                std::vector<int> &next_he,
                std::vector<int> &opp,
                std::vector<int> &bnd_loops,
-               std::vector<int> &vtx_reindex)
+               std::vector<int> &vtx_reindex,
+               std::vector<std::vector<int>> &corner_to_he,
+               std::vector<std::pair<int, int>> &he_to_corner)
 {
     // Convert eigen matrix to vector of vectors
     std::vector<std::vector<int>> F_vec(F.rows(),std::vector<int>(F.cols()));
@@ -179,7 +200,7 @@ void FV_to_NOB(const Eigen::MatrixXi &F,
     }
 
     // Run FV_to_NOB method
-    FV_to_NOB(F_vec, next_he, opp, bnd_loops, vtx_reindex);
+    FV_to_NOB(F_vec, next_he, opp, bnd_loops, vtx_reindex, corner_to_he, he_to_corner);
 }
 
 void build_boundary_loops(const std::vector<int> &next_he,
@@ -403,9 +424,13 @@ void NOB_to_connectivity(const std::vector<int> &next_he,
 void NOB_to_double(const std::vector<int> &next_he_in,
                    const std::vector<int> &opp_in,
                    const std::vector<int> &bnd_loops_in,
+                   const std::vector<std::vector<int>> &corner_to_he_in,
+                   const std::vector<std::pair<int, int>> &he_to_corner_in,
                    Connectivity &C,
                    std::vector<char> &type,
-                   std::vector<int> &R)
+                   std::vector<int> &R,
+                   std::vector<std::vector<int>> &corner_to_he,
+                   std::vector<std::pair<int, int>> &he_to_corner)
 {
     int n_f = bnd_loops_in[0];
 
@@ -536,6 +561,21 @@ void NOB_to_double(const std::vector<int> &next_he_in,
     for (int i = 0; i < bnd_he_new.size(); ++i)
     {
         type[bnd_he_new[i]] = 2;
+    }
+
+    // Double the he to corner maps
+    corner_to_he = corner_to_he_in;
+    he_to_corner.resize(2 * n_he_nb);
+    for (size_t i = 0; i < 2 * n_he_nb; ++i)
+    {
+        if (type[i] == 1)
+        {
+            he_to_corner[i] = he_to_corner_in[i];
+        }
+        else if (type[i] == 2)
+        {
+            he_to_corner[i] = he_to_corner_in[R[i]];
+        }
     }
 }
 
