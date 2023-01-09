@@ -242,16 +242,17 @@ FV_to_double(
             }
         }
 
-        // Also fix all cones explicitly given as fixed
-        for (size_t i = 0; i < free_cones.size(); ++i)
-        {
-            // Get cone after reindexing
-            int vi = free_cones[i];
-            int permuted_vi = vtx_reindex[vi];
+    }
 
-            // Set cone as fixed dof
-            m.fixed_dof[permuted_vi] = true;
-        }
+    // Also fix all cones explicitly given as fixed
+    for (size_t i = 0; i < free_cones.size(); ++i)
+    {
+        // Get cone after reindexing
+        int vi = free_cones[i];
+        int permuted_vi = vtx_reindex[vi];
+
+        // Set cone as fixed dof
+        m.fixed_dof[permuted_vi] = true;
     }
 
     // Check for consistency of lengths
