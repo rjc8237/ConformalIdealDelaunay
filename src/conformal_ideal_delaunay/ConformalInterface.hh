@@ -1162,6 +1162,7 @@ std::tuple<
         std::vector<Scalar>,                    // layout u (per vertex)
         std::vector<Scalar>,                    // layout v (per vertex)
         std::vector<std::vector<int>>,          // FT_out
+        std::vector<bool>,                      // is_cut
         std::vector<bool>,                      // is_cut_o
         std::vector<int>,                       // Fn_to_F
         std::vector<std::pair<int,int>>>        // map from new vertices to original endpoints
@@ -1227,6 +1228,7 @@ overlay_mesh_to_VL(const Eigen::MatrixXd& V,
 
     // get layout
     auto layout_res = get_layout(mo, u, bd, cones, do_trim, root);
+    auto is_cut = std::get<2>(layout_res);
     auto u_o = std::get<3>(layout_res);
     auto v_o = std::get<4>(layout_res);
     auto is_cut_o = std::get<5>(layout_res);
@@ -1284,7 +1286,7 @@ overlay_mesh_to_VL(const Eigen::MatrixXd& V,
         endpoints_out[i] = std::make_pair(a, b);
     }
 
-    return std::make_tuple(v3d_out, F_out, u_o_out, v_o_out, FT_out, is_cut_o, Fn_to_F, endpoints_out);
+    return std::make_tuple(v3d_out, F_out, u_o_out, v_o_out, FT_out, is_cut, is_cut_o, Fn_to_F, endpoints_out);
 }
 
 
@@ -1354,9 +1356,10 @@ conformal_parametrization_VL(const Eigen::MatrixXd &V,
     auto u_o_out = std::get<2>(vl_out);
     auto v_o_out = std::get<3>(vl_out);
     auto FT_out = std::get<4>(vl_out);
-    // Skip vl_out[5] = is_cut_o
-    auto Fn_to_F = std::get<6>(vl_out);
-    auto endpoints_out = std::get<7>(vl_out);
+    // Skip vl_out[5] = is_cut
+    // Skip vl_out[6] = is_cut_o
+    auto Fn_to_F = std::get<7>(vl_out);
+    auto endpoints_out = std::get<8>(vl_out);
 
 
     // check flips in the layout results
