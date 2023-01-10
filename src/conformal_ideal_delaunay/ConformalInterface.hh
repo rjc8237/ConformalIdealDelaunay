@@ -50,13 +50,12 @@
 
 
   /**
-   * Given the prescribed per-vertex angle sum, modify the angle sum at first vertex, 
-   * to make sure Gauss-Bonnet is respected up to numerical error.
+   * Given the prescribed per-vertex angle sum, check how much the angles invalidate Gauss-Bonnet
    * @param m Mesh data structure
    * @return void
    */
 template <typename Scalar>
-void GaussBonnetCorrection(Mesh<Scalar>& m)
+void GaussBonnetCheck(Mesh<Scalar>& m)
 {    
     Scalar pi;
 #ifdef WITH_MPFR
@@ -72,8 +71,7 @@ void GaussBonnetCorrection(Mesh<Scalar>& m)
     Scalar th_hat_sum = 0.0;
     for(auto t: m.Th_hat)
       th_hat_sum += t;
-    spdlog::info("Fixing Guass-Bonnet error of {}", th_hat_sum - targetsum);
-    m.Th_hat[0] -= (th_hat_sum - targetsum);
+    spdlog::info("Guass-Bonnet error of {}", th_hat_sum - targetsum);
 }
 
 /**
@@ -173,7 +171,11 @@ FV_to_double(
         m.Th_hat = Theta_hat_perm;
         m.v_rep = range(0, n_v);
         m.fixed_dof = std::vector<bool>(n_v, false);
-        m.fixed_dof[0] = true;
+
+        if (free_cones.empty())
+        {
+            m.fixed_dof[0] = true;
+        }
     }
     // If there is boundary, create a double tufted cover with a reflection map
     else
@@ -269,8 +271,8 @@ FV_to_double(
         return Mesh<Scalar>();
     }
 
-    // Correct Gauss-Bonnet error
-    GaussBonnetCorrection(m);
+    // Check Gauss-Bonnet error
+    GaussBonnetCheck(m);
     return m;
 }
 
