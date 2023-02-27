@@ -1181,8 +1181,33 @@ public:
    */
   static std::tuple<OverlayMesh<Scalar>, std::vector<int>> GetReverseMap(OverlayMesh<Scalar> & m_o, const std::vector<int> &flip_seq)
   {
+    // Copy the final mesh with a clean overlay
     auto mc = m_o.cmesh();
     OverlayMesh<Scalar> m_o_rev(mc);
+
+    // Reverse the flips in the new overlay mesh
+    ReverseFlips(m_o_rev, flip_seq);
+    m_o.garbage_collection();
+    spdlog::debug("#m_o.out: {}, #m_o_rev.out: {}", m_o.out.size(), m_o_rev.out.size());
+    spdlog::debug("#m_o.n: {}, #m_o_rev.n: {}", m_o.n.size(), m_o_rev.n.size());
+    if(m_o_rev.bypass_overlay){
+      m_o.bypass_overlay = true;
+      return std::make_tuple(m_o_rev, std::vector<int>());
+    }
+
+    // Get the vertex map between the forward and reverse overlay meshes
+    std::vector<int> v_map = GetVertexMap(m_o, m_o_rev);
+
+    return std::make_tuple(m_o_rev, v_map);
+  }
+
+   /**
+   * Reverse flips in a mesh using the Halfedge-Flip Sequence
+   * @param m_o_rev OverlayMesh computed from FindConformalMetric to reverse
+   * @param flip_seq Flip_ccw Sequence used in FindConformalMetric
+   */
+  static void ReverseFlips(OverlayMesh<Scalar> & m_o_rev, const std::vector<int> &flip_seq)
+  {
     bool do_Ptolemy = true;
     // do reverse flips
     for (int ii = flip_seq.size() - 1; ii >= 0; ii--)
@@ -1207,21 +1232,25 @@ public:
         m_o_rev.flip_ccw(-flip_seq[ii]-1, false);
         m_o_rev.flip_ccw(-flip_seq[ii]-1, false);
       }
-      
     }
-    if(m_o_rev.bypass_overlay){
-      m_o.bypass_overlay = true;
-      return std::make_tuple(m_o_rev, std::vector<int>());
-    }
-    m_o.garbage_collection();
+    if(m_o_rev.bypass_overlay) return;
     m_o_rev.garbage_collection();
 
     if (do_Ptolemy == false)
     {
       m_o_rev.bc_original_to_eq(m_o_rev.cmesh().n, m_o_rev.cmesh().to, m_o_rev.cmesh().l);
     }
-    spdlog::debug("#m_o.out: {}, #m_o_rev.out: {}", m_o.out.size(), m_o_rev.out.size());
-    spdlog::debug("#m_o.n: {}, #m_o_rev.n: {}", m_o.n.size(), m_o_rev.n.size());
+  }
+
+   /**
+   * Get vertices map between the overlay mesh and reversed mesh
+   * @param m_o OverlayMesh computed from FindConformalMetric
+   * @param m_o_rev reversed OverlayMesh computed from FindConformalMetric
+   * @return vertices-id map between m_o_rev and m_o
+   */
+  static std::vector<int> GetVertexMap(OverlayMesh<Scalar> & m_o, OverlayMesh<Scalar> & m_o_rev)
+  {
+    auto mc = m_o.cmesh();
 
     // get the v_map
     std::vector<int> v_map(m_o.out.size());
@@ -1327,7 +1356,7 @@ public:
       
     }
     
-    return std::make_tuple(m_o_rev, v_map);
+    return v_map;
   }
 
   /**
