@@ -37,7 +37,7 @@
 .vs/*
 
 out/*
-build/*
+build*
 debug/*
 data/*
 !data/examples/

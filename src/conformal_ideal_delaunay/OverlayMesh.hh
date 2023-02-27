@@ -58,8 +58,6 @@
 #include <unsupported/Eigen/MPRealSupport>
 #endif
 
-#define DEBUG 0
-
 #define ORIGINAL_VERTEX 0
 #define SEGMENT_VERTEX 1
 
