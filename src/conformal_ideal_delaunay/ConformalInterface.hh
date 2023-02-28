@@ -85,7 +85,12 @@ bool check_length_consistency(
 ) {
     for (size_t he = 0; he < m.n_halfedges(); ++he)
     {
-        if (abs(m.l[he] - m.l[m.opp[he]]) > 1e-12) return false;
+        Scalar consistency_error = abs(m.l[he] - m.l[m.opp[he]]);
+        if (consistency_error > 1e-12)
+        {
+            spdlog::error("Consistency error of {}", consistency_error);
+            return false;
+        }
     }
 
     return true;
