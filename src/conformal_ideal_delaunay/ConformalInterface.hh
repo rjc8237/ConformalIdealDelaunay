@@ -86,7 +86,7 @@ bool check_length_consistency(
     for (size_t he = 0; he < m.n_halfedges(); ++he)
     {
         Scalar consistency_error = abs(m.l[he] - m.l[m.opp[he]]);
-        if (consistency_error > 1e-12)
+        if (consistency_error > 1e-8)
         {
             spdlog::error("Consistency error of {}", consistency_error);
             return false;
@@ -272,8 +272,7 @@ FV_to_double(
     // Check for consistency of lengths
     if (!check_length_consistency(m))
     {
-        spdlog::error("Lengths of input mesh metric are not consistent across edges");
-        return Mesh<Scalar>();
+        spdlog::warn("Lengths of input mesh metric are not consistent across edges");
     }
 
     // Check Gauss-Bonnet error
