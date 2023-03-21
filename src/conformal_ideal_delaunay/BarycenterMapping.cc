@@ -389,6 +389,7 @@ void recompute_bc_original(int _h,
 }
 
 template void equilateral_to_scaled<double, double>(std::vector<Pt<double>> &, std::vector<std::vector<int>> &, const std::vector<int> &, const std::vector<int> &, const std::vector<int> &, const std::vector<double> &, const Eigen::Matrix<double, -1, 1> &);
+template void scaled_to_equilateral<double, double>(std::vector<Pt<double>> &, std::vector<std::vector<int>> &, const std::vector<int> &, const std::vector<int> &, const std::vector<int> &, const std::vector<double> &, const Eigen::Matrix<double, -1, 1> &);
 template double compute_tan_half<double>(double a, double b, double c);
 template void recompute_bc_hyper<double, double>(int, const std::vector<int> &, const std::vector<int> &, const std::vector<int> &, const std::vector<int> &, const std::vector<double> &, std::vector<Pt<double>> &, std::vector<std::vector<int>> &);
 template void original_to_equilateral<double, double>(std::vector<Pt<double>> &, std::vector<std::vector<int>> &, const std::vector<int> &, const std::vector<int> &, const std::vector<double> &);
@@ -397,6 +398,7 @@ template void recompute_bc_original<double, double>(int, const std::vector<int> 
 #ifdef WITH_MPFR
 template mpfr::mpreal compute_tan_half<mpfr::mpreal>(mpfr::mpreal a, mpfr::mpreal b, mpfr::mpreal c);
 template void equilateral_to_scaled<mpfr::mpreal, mpfr::mpreal>(std::vector<Pt<mpfr::mpreal>>&, std::vector<std::vector<int>>&, const std::vector<int>&, const std::vector<int>&, const std::vector<int>&, const std::vector<mpfr::mpreal>&, const Eigen::Matrix<mpfr::mpreal, -1, 1>&);
+template void scaled_to_equilateral<mpfr::mpreal, mpfr::mpreal>(std::vector<Pt<mpfr::mpreal>> &, std::vector<std::vector<int>> &, const std::vector<int> &, const std::vector<int> &, const std::vector<int> &, const std::vector<mpfr::mpreal> &, const Eigen::Matrix<mpfr::mpreal, -1, 1> &);
 template void recompute_bc_hyper<mpfr::mpreal, mpfr::mpreal>(int, const std::vector<int>&, const std::vector<int>&, const std::vector<int>&, const std::vector<int>&, const std::vector<mpfr::mpreal>&, std::vector<Pt<mpfr::mpreal>>&, std::vector<std::vector<int>>&);
 template void original_to_equilateral<mpfr::mpreal, mpfr::mpreal>(std::vector<Pt<mpfr::mpreal>>&, std::vector<std::vector<int>>&, const std::vector<int>&, const std::vector<int>&, const std::vector<mpfr::mpreal>&);
 template void recompute_bc_original<mpfr::mpreal, mpfr::mpreal>(int, const std::vector<int> &, const std::vector<int> &, const std::vector<int> &, const std::vector<int> &, const std::vector<mpfr::mpreal> &, std::vector<Pt<mpfr::mpreal>> &, std::vector<std::vector<int>> &);
