@@ -250,6 +250,41 @@ void equilateral_to_scaled(
 }
 
 template <typename Scalar, typename Scalar_pt>
+void scaled_to_equilateral(
+    std::vector<Pt<Scalar_pt>> &pts,
+    std::vector<std::vector<int>> &pt_in_f,
+    const std::vector<int> &n,
+    const std::vector<int> &h,
+    const std::vector<int> &to,
+    const std::vector<Scalar> &l,
+    const Eigen::Matrix<Scalar, -1, 1> &u)
+{
+    for (int i = 0; i < pts.size(); i++)
+    {
+        int fid = pts[i].f_id;
+        int hij = h[fid];
+        int hjk = n[hij];
+        int hki = n[hjk];
+        Scalar lij = l[hij];
+        Scalar ljk = l[hjk];
+        Scalar lki = l[hki];
+        if(to[hki] < u.rows() && to[hij] < u.rows() && to[hjk] < u.rows()){
+            Scalar u1 = u[to[hki]];
+            Scalar u2 = u[to[hij]];
+            Scalar u3 = u[to[hjk]];
+            Scalar u_avg = (u1 + u2 + u3) / 3;
+            Scalar Si = (lij * lki) / ljk * exp(u1 - u_avg);
+            Scalar Sj = (lij * ljk) / lki * exp(u2 - u_avg);
+            Scalar Sk = (lki * ljk) / lij * exp(u3 - u_avg);
+            pts[i].bc(0) *= Scalar_pt(Si);
+            pts[i].bc(1) *= Scalar_pt(Sj);
+            pts[i].bc(2) *= Scalar_pt(Sk);
+            pts[i].bc /= pts[i].bc.sum();
+        }
+    }
+}
+
+template <typename Scalar, typename Scalar_pt>
 void recompute_bc_original(int _h,
                         const std::vector<int> &n,
                         const std::vector<int> &h,

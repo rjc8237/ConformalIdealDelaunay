@@ -73,6 +73,16 @@ void equilateral_to_scaled(
     const Eigen::Matrix<Scalar, -1, 1> &u);
 
 template <typename Scalar, typename Scalar_pt>
+void scaled_to_equilateral(
+    std::vector<Pt<Scalar_pt>> &pts,
+    std::vector<std::vector<int>> &pt_in_f,
+    const std::vector<int> &n,
+    const std::vector<int> &h,
+    const std::vector<int> &to,
+    const std::vector<Scalar> &l,
+    const Eigen::Matrix<Scalar, -1, 1> &u);
+
+template <typename Scalar, typename Scalar_pt>
 void recompute_bc_original(int _h,
                         const std::vector<int> &n,
                         const std::vector<int> &h,
