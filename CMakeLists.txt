@@ -4,8 +4,6 @@ project(ConformalIdealDelaunay)
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(DIR_EXT "${CMAKE_CURRENT_SOURCE_DIR}/ext")
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src/util")
-
 # enable CGAL if MPFR is needed
 option(LIBIGL_COPYLEFT_CGAL        "Use CGAL"           ON)
 option(LIBIGL_PREDICATES          "Use Predicates"     ON)
@@ -59,6 +57,8 @@ add_library(conformal_cpp SHARED
   src/util/check_flip.cc
 )
 target_include_directories(conformal_cpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(conformal_cpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/util)
+
 
 # build pybind functions
 add_library(conformal_py MODULE
@@ -68,6 +68,8 @@ add_library(conformal_py MODULE
   src/conformal_ideal_delaunay/ConformalPybind.cpp
   src/util/check_flip.cc
 )
+target_include_directories(conformal_py PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(conformal_py PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/util)
 
 if (RENDER_TEXTURE)
   add_compile_definitions(RENDER_TEXTURE)
