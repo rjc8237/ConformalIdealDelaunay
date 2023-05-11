@@ -1076,6 +1076,7 @@ public:
 
     VectorX currentg;
     Gradient(mc, alpha, currentg, solve_stats);
+    spdlog::info("itr(0) lm({}) flips({}) max_error({}))", lambda, delaunay_stats.n_flips, currentg.cwiseAbs().maxCoeff());
     while (currentg.cwiseAbs().maxCoeff() >= alg_params.error_eps)
     {
       // Compute gradient and descent direction from Hessian (with efficient solver)
