@@ -851,19 +851,19 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>,
     // recursively remove degree-1 edges unless it's connected to a singularity
     if (do_trim){
       is_cut_o = std::get<2>(overlay_layout_res);
-      Eigen::MatrixXd debug_uv(m_o_tri.h.size()*3, 3);
-      Eigen::MatrixXi debug_Fuv(m_o_tri.h.size(), 3);
-      for(int f = 0; f < m_o_tri.h.size(); f++){
-        int h0 = m_o_tri.h[f];
-        int h1 = m_o_tri.n[h0];
-        int h2 = m_o_tri.n[h1];
-        debug_uv.row(f*3) <<   double(_u_o[h0]), double(_v_o[h0]), 0;
-        debug_uv.row(f*3+1) << double(_u_o[h1]), double(_v_o[h1]), 0;
-        debug_uv.row(f*3+2) << double(_u_o[h2]), double(_v_o[h2]), 0;
-        debug_Fuv.row(f) << f*3, f*3+1, f*3+2;
-      }
-      igl::writeOBJ("debug_uv.obj", debug_uv, debug_Fuv);
-      // trim_open_branch(m_o_tri, f_labels, singularities, is_cut_o);
+      //Eigen::MatrixXd debug_uv(m_o_tri.h.size()*3, 3);
+      //Eigen::MatrixXi debug_Fuv(m_o_tri.h.size(), 3);
+      //for(int f = 0; f < m_o_tri.h.size(); f++){
+      //  int h0 = m_o_tri.h[f];
+      //  int h1 = m_o_tri.n[h0];
+      //  int h2 = m_o_tri.n[h1];
+      //  debug_uv.row(f*3) <<   double(_u_o[h0]), double(_v_o[h0]), 0;
+      //  debug_uv.row(f*3+1) << double(_u_o[h1]), double(_v_o[h1]), 0;
+      //  debug_uv.row(f*3+2) << double(_u_o[h2]), double(_v_o[h2]), 0;
+      //  debug_Fuv.row(f) << f*3, f*3+1, f*3+2;
+      //}
+      //igl::writeOBJ("debug_uv.obj", debug_uv, debug_Fuv);
+      trim_open_branch(m_o_tri, f_labels, singularities, is_cut_o);
     }
 
     _u_o.resize(m_o.n.size());
