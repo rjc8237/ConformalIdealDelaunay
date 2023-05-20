@@ -116,7 +116,7 @@ compute_layout(Mesh<Scalar> &m, const std::vector<Scalar> &u, std::vector<bool>&
   assert(m.f[h] != -1);
 
   phi[h] = xi[h];
-  _u[h] = m.l[m.e(h)] * exp(phi[h] / 2);
+  _u[h] = m.l[m.e(h)] * exp(u[h] / 2);
   _v[h] = 0.0;
   auto done = std::vector<bool>(m.n_faces(), false);
 
