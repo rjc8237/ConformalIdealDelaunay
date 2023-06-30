@@ -900,9 +900,9 @@ compute_overlay_cut(
     return;
   }
 
-  // Initialize output data structure
+  // Initialize spanning tree
   int num_halfedges = mo.n_halfedges();
-  is_cut_h = std::vector<bool>(num_halfedges, false);
+  std::vector<bool> is_spanning_tree_h(num_halfedges, false);
 
   // Initialize the stack of vertices to process with an arbitrary vertex
   std::deque<int> vertices_to_process = {0};
@@ -911,8 +911,8 @@ compute_overlay_cut(
   while (!vertices_to_process.empty())
   {
     // Get the next vertex to process
-    int current_vertex = vertices_to_process.back();
-    vertices_to_process.pop_back();
+    int current_vertex = vertices_to_process.front();
+    vertices_to_process.pop_front();
 
     // Iterate over the vertex circulator via halfedges
     int h_start = mo.out[current_vertex];
@@ -926,8 +926,8 @@ compute_overlay_cut(
       if ((mo.edge_type[h] != CURRENT_EDGE) && (!is_found_vertex[one_ring_vertex]))
       {
         // Add the edge to the spanning tree
-        is_cut_h[h] = true;
-        is_cut_h[mo.opp[h]] = true;
+        is_spanning_tree_h[h] = true;
+        is_spanning_tree_h[mo.opp[h]] = true;
 
         // Mark the vertex as found and add it to the vertices to process
         vertices_to_process.push_back(one_ring_vertex);
@@ -939,6 +939,51 @@ compute_overlay_cut(
     }
     while (h != h_start);
   }
+
+  // Now, perform breadth first search over faces to build a cotree of edges not to cut
+  int num_faces = mo.n_faces();
+  is_cut_h = std::vector<bool>(num_halfedges, true);
+  std::vector<bool> is_found_face(num_faces, false);
+  std::deque<int> faces_to_process = {0};
+  while (!faces_to_process.empty())
+  {
+    // Get the next vertex to process
+    int current_face = faces_to_process.front();
+    faces_to_process.pop_front();
+
+    // Iterate over the face via halfedges
+    int h_start = mo.h[current_face];
+    int h = h_start;
+    do
+    {
+      // Get the face adjacent to the given edge
+      int adjacent_face = mo.f[mo.opp[h]];
+
+      // All edges not in the original mesh cannot be cut
+      if (mo.edge_type[h] == CURRENT_EDGE)
+      {
+        is_cut_h[h] = false;
+      }
+      
+      // Check if the edge is not in the spanning tree and the adjacent face is not processed yet
+      if ((!is_spanning_tree_h[h]) && (!is_found_face[adjacent_face]))
+      {
+        // Add the edge to the spanning cotree
+        is_cut_h[h] = false;
+        is_cut_h[mo.opp[h]] = false;
+
+        // Mark the face as found and add it to the face to process
+        faces_to_process.push_back(adjacent_face);
+        is_found_face[adjacent_face] = true;
+      }
+
+      // Progress to the next halfedge in the vertex circulator
+      h = mo.n[h];
+    }
+    while (h != h_start);
+  }
+
+
 }
 
 /**
