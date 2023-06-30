@@ -1116,6 +1116,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>,
         }
         m.l[h0] = sqrt((u_o[h0]-u_o[h1])*(u_o[h0]-u_o[h1]) + (v_o[h0]-v_o[h1])*(v_o[h0]-v_o[h1]));
     }
+    triangulate_polygon_mesh(m, u_o, v_o, f_labels);
     m.type = std::vector<char>(m.n.size(), 0);
     m.type_input = m.type;
     m.R = std::vector<int>(m.n.size(), 0);
@@ -1123,7 +1124,16 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>,
     m.Th_hat = std::vector<Scalar>(m.out.size(), 0.0);
 
     // Get overlay cut using only original edges
-    compute_overlay_cut(m_o, is_cut_o);
+    std::vector<bool> is_cut_poly;
+    compute_overlay_cut(m_o, is_cut_poly);
+
+    // Extend the overlay cut to the triangulated mesh
+    // WARNING: Assumes new halfedges added to the end
+    is_cut_o = std::vector<bool>(m.n_halfedges(), false);
+    for (int h = 0; h < m_o.n_halfedges(); ++h)
+    {
+      is_cut_o[h] = is_cut_poly[h];
+    }
     
     // now directly do layout on overlay mesh
     // TODO Make sure don't need to change edge type or other data fields
