@@ -1172,6 +1172,12 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>,
     std::vector<bool> is_cut_poly;
     compute_overlay_cut(m_o, is_cut_poly);
 
+    // Optionally do trim
+    if (do_trim)
+    {
+      trim_open_branch(m_o, f_labels, singularities, is_cut_poly);
+    }
+
     // Extend the overlay cut to the triangulated mesh
     // WARNING: Assumes new halfedges added to the end
     is_cut_o = std::vector<bool>(m.n_halfedges(), false);
@@ -1186,12 +1192,6 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>,
     auto overlay_layout_res = compute_layout(m, phi, is_cut_o);
     _u_o = std::get<0>(overlay_layout_res);
     _v_o = std::get<1>(overlay_layout_res);
-
-    // Optionally do trim
-    if (do_trim)
-    {
-      trim_open_branch(m_o, f_labels, singularities, is_cut_o);
-    }
   }
 
   return std::make_tuple(_u_c, _v_c, is_cut_c, _u_o, _v_o, is_cut_o);
