@@ -893,7 +893,6 @@ compute_overlay_cut(
 ) {
   // Initialize an array to keep track of vertices
   int num_vertices = mo.n_vertices();
-  std::vector<bool> is_found_vertex(num_vertices, false);
   if (num_vertices == 0)
   {
     spdlog::error("Cannot cut a trivial mesh");
@@ -903,9 +902,27 @@ compute_overlay_cut(
   // Initialize spanning tree
   int num_halfedges = mo.n_halfedges();
   std::vector<bool> is_spanning_tree_h(num_halfedges, false);
+  std::vector<bool> is_found_vertex(num_vertices, false);
 
-  // Initialize the stack of vertices to process with an arbitrary vertex
-  std::deque<int> vertices_to_process = {0};
+  // Initialize the stack of vertices to process with an arbitrary on the original
+  // connectivity
+  std::deque<int> vertices_to_process;
+  for (int vi = 0; vi < num_vertices; ++vi)
+  {
+    if (mo.vertex_type[vi] == ORIGINAL_VERTEX)
+    {
+      vertices_to_process.push_back(vi);
+      is_found_vertex[vi] = true;
+      break;
+    }
+  }
+
+  // Check that some vertex was found
+  if (vertices_to_process.empty())
+  {
+    spdlog::error("Could not find starting vertex for overlay cut");
+    return;
+  }
 
   // Perform breadth first search
   while (!vertices_to_process.empty())
@@ -945,6 +962,7 @@ compute_overlay_cut(
   is_cut_h = std::vector<bool>(num_halfedges, true);
   std::vector<bool> is_found_face(num_faces, false);
   std::deque<int> faces_to_process = {0};
+  is_found_face[0] = true;
   while (!faces_to_process.empty())
   {
     // Get the next vertex to process
@@ -959,10 +977,16 @@ compute_overlay_cut(
       // Get the face adjacent to the given edge
       int adjacent_face = mo.f[mo.opp[h]];
 
-      // All edges not in the original mesh cannot be cut
+      // If the edge is a current edge, circulate around the vertex at the tip
       if (mo.edge_type[h] == CURRENT_EDGE)
       {
+        // Do not cut edges not in the original connectivity
         is_cut_h[h] = false;
+        is_cut_h[mo.opp[h]] = false;
+
+        // Circulate and continue
+        h = mo.n[mo.opp[h]];
+        continue;
       }
       
       // Check if the edge is not in the spanning tree and the adjacent face is not processed yet
@@ -977,7 +1001,7 @@ compute_overlay_cut(
         is_found_face[adjacent_face] = true;
       }
 
-      // Progress to the next halfedge in the vertex circulator
+      // Progress to the next halfedge in the face circulator
       h = mo.n[h];
     }
     while (h != h_start);
