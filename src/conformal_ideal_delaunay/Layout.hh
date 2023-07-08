@@ -984,6 +984,9 @@ compute_overlay_cut(
         is_cut_h[h] = false;
         is_cut_h[mo.opp[h]] = false;
 
+        // Mark the adjacent face as found
+        is_found_face[adjacent_face] = true;
+
         // Circulate and continue
         h = mo.n[mo.opp[h]];
         continue;
