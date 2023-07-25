@@ -459,16 +459,14 @@ void trim_open_branch(OverlayMesh<Scalar>& m_o, std::vector<int>& f_labels, std:
       if (!is_cut[hi] || f_labels[m_o.f[hi]] == 2) 
         continue;
       int v0 = m_o.to[hi];
-      int v1 = m_o.to[m_o.opp[hi]];
-      if (std::find(singularities.begin(), singularities.end(), v0) != singularities.end() || 
-          std::find(singularities.begin(), singularities.end(), v1) != singularities.end())
-        continue;
-      if (count_valence(m_o.n, m_o.opp, hi, is_cut) == 1 || count_valence(m_o.n, m_o.opp, m_o.opp[hi], is_cut) == 1)
+      if ((count_valence(m_o.n, m_o.opp, hi, is_cut) == 1) &&
+          std::find(singularities.begin(), singularities.end(), v0) == singularities.end())
       {
         is_cut[hi] = false;
         is_cut[m_o.opp[hi]] = false;
         any_trimmed = true;
         n_trimmed++;
+        continue;
       }
     }
   }
@@ -1200,10 +1198,8 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>,
     compute_overlay_cut(m_o, is_cut_poly);
 
     // Optionally do trim
-    if (do_trim)
-    {
-      trim_open_branch(m_o, f_labels, singularities, is_cut_poly);
-    }
+    // FIXME Check if should be optional
+    trim_open_branch(m_o, f_labels, singularities, is_cut_poly);
 
     // Extend the overlay cut to the triangulated mesh
     // WARNING: Assumes new halfedges added to the end
