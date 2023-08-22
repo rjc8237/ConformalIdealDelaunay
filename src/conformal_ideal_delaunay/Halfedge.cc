@@ -166,7 +166,7 @@ void FV_to_NOB(const std::vector<std::vector<int>> &F,
 
     // Create map from corners to halfedges and the revers
     corner_to_he.resize(n_f);
-    he_to_corner.resize(n_he);
+    he_to_corner = std::vector<std::pair<int, int>>(n_he, std::make_pair(-1, -1));
     for (size_t i = 0; i < n_f; ++i)
     {
         corner_to_he[i].resize(3);

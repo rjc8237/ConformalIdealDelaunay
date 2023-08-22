@@ -107,14 +107,14 @@ bool OverlayProblem::OverlayMesh<Scalar>::o_flip_ccw(Mesh<Scalar>* _m, int _h, b
     int v1 = _m->to[_h0];
 
     if (vertex_type[v0] == SEGMENT_VERTEX || vertex_type[v1] == SEGMENT_VERTEX) {
-        printf("Can only Flip between Original Vertices!\n");
+        spdlog::error("Can only Flip between Original Vertices!\n");
         return false;
     }
 
     //Gets the Type of the Edge (O == 0, C == 1, OC == 2)
     int type = edge_type[this->e(first_segment[_h0])];
     if (type == ORIGINAL_EDGE) {
-        printf("Can not flip O-Edge!\n");
+        spdlog::error("Can not flip O-Edge!\n");
         return false;
     }
 
@@ -128,11 +128,25 @@ bool OverlayProblem::OverlayMesh<Scalar>::o_flip_ccw(Mesh<Scalar>* _m, int _h, b
 
         if (diag_seg != -1) {
             // Case: C -> OC
+            spdlog::trace("C -> OC");
             //First, remove the Current-Edge.
             this->remove_all_segments(_h0);
             //Refreshing Diagonal...
             diag_seg = this->seek_segment_to(end_seg, start_seg, _h0, _h1);
-            if (diag_seg == -1) return false;
+            if (diag_seg == -1)
+            {
+                spdlog::error("Invalid diagonal segment after removing edge");
+                return false;
+            }
+            spdlog::trace(
+                "Flipping edge ({}, {}) with origin ({}, {}) to ({}, {})",
+                diag_seg,
+                this->opp[diag_seg],
+                origin[diag_seg],
+                origin[this->opp[diag_seg]],
+                _m->opp[_h0],
+                _h0
+            );
             this->set_segment_edge_type(diag_seg, ORIGINAL_AND_CURRENT_EDGE); 
 
             //Update the First-Structure (We know that no Edges will intersect this OC-Edge)
@@ -171,6 +185,7 @@ bool OverlayProblem::OverlayMesh<Scalar>::o_flip_ccw(Mesh<Scalar>* _m, int _h, b
         } 
         else {
             //Case: C -> C
+            spdlog::trace("C -> C");
 
             //Remove Diagonal
             this->remove_all_segments(_h0);
@@ -181,8 +196,18 @@ bool OverlayProblem::OverlayMesh<Scalar>::o_flip_ccw(Mesh<Scalar>* _m, int _h, b
         }
     } else if (type == ORIGINAL_AND_CURRENT_EDGE) {
         //Case: OC -> C
+        spdlog::trace("OC -> C");
         // the only difference between oc->c and c->c is we need to initiate the oc to o before construct flipped diagonal, in c->c case we need to remove the previous c path
         this->set_segment_edge_type(first_segment[_h0], ORIGINAL_EDGE);
+        spdlog::trace(
+            "Flipping edge ({}, {}) with origin ({}, {}) and origin of origin ({}, {})",
+            first_segment[_h0],
+            this->opp[first_segment[_h0]],
+            origin[first_segment[_h0]],
+            origin[this->opp[first_segment[_h0]]],
+            origin_of_origin[first_segment[_h0]],
+            origin_of_origin[this->opp[first_segment[_h0]]]
+        );
         
         // make sure they have the correct origin
         origin[first_segment[_h0]] = origin_of_origin[first_segment[_h0]];
@@ -191,6 +216,9 @@ bool OverlayProblem::OverlayMesh<Scalar>::o_flip_ccw(Mesh<Scalar>* _m, int _h, b
         int first_opp_seg = first_segment[_m->n[_h0]];
         this->construct_flipped_current_diagonal(_m, _h0, first_opp_seg, start_seg, end_seg, Ptolemy);
     }
+
+    // FIXME
+    this->check(_m);
 
     return true;
 }
@@ -658,7 +686,10 @@ int OverlayProblem::OverlayMesh<Scalar>::split_halfedge(int h) {
     int o0 = origin[h0];
     int o1 = origin[h1];
 
-    int n0 = this->create_halfedge(edge_type[this->e(h)], o0, o1);
+    int oo0 = origin_of_origin[h0];
+    int oo1 = origin_of_origin[h1];
+
+    int n0 = this->create_halfedge(edge_type[this->e(h)], o0, o1, oo0, oo1);
     int n1 = n0 + 1;
 
     int k0 = this->n[h0];
@@ -801,11 +832,15 @@ void OverlayProblem::OverlayMesh<Scalar>::remove_valence2_vertex(int v_to_keep) 
         return;
     }
 
+    spdlog::trace("Removing valence 2 vertex for halfedge {} of type {} with origin {}", v_to_keep, edge_type[v_to_keep], origin[v_to_keep]);
+
     int h0 = v_to_keep;
     int h1 = this->opp[h0];
 
     int d0 = this->n[h0];
     int d1 = this->opp[d0];
+
+    spdlog::trace("Deleting halfedge {} of type {} with origin {}", d0, edge_type[d0], origin[d0]);
 
     int n0 = this->n[d0];
     int n1 = prev[d1];
@@ -839,7 +874,7 @@ void OverlayProblem::OverlayMesh<Scalar>::remove_valence2_vertex(int v_to_keep) 
 
     if (edge_type[this->e(v_to_keep)] != ORIGINAL_EDGE)
     {
-        spdlog::info("remove a valence 2 vertex on a current edge");
+        spdlog::trace("remove a valence 2 vertex on a current edge");
     }
     
     this->n[h0] = n0;
@@ -879,6 +914,7 @@ void OverlayProblem::OverlayMesh<Scalar>::remove_valence2_vertex(int v_to_keep) 
 
 template<typename Scalar>
 int OverlayProblem::OverlayMesh<Scalar>::merge_faces(int dh) {
+    spdlog::trace("Merging face for halfedge {} of type {}", dh, edge_type[dh]);
 
     int h0 = dh;
     int h1 = this->opp[dh];
@@ -983,7 +1019,7 @@ bool OverlayProblem::OverlayMesh<Scalar>::check(Mesh<Scalar>* _m) {
             //All have to be -1
             if (!(this->n[h] == -1 && this->prev[h] == -1 && this->to[h] == -1 && this->f[h] == -1)) {
                 //Print the faulty Halfedge
-                printf("\tHalfedge is corrupted: N: %i, Prev: %i, To: %i, f: %i\n\n", this->n[h], this->prev[h], this->to[h], this->f[h]);
+                spdlog::error("\tHalfedge is corrupted: N: %i, Prev: %i, To: %i, f: %i\n\n", this->n[h], this->prev[h], this->to[h], this->f[h]);
                 good = false;
             }
         }
@@ -995,7 +1031,7 @@ bool OverlayProblem::OverlayMesh<Scalar>::check(Mesh<Scalar>* _m) {
 
         int fs = first_segment[_h];
         if (fs == -1) {
-            printf("\tFirst Segment of Original Halfedge %i is -1?!\n", _h);
+            spdlog::error("\tFirst Segment of Original Halfedge %i is -1?!\n", _h);
             good = false;
             break;
         }
@@ -1003,15 +1039,15 @@ bool OverlayProblem::OverlayMesh<Scalar>::check(Mesh<Scalar>* _m) {
 
         int ofs = first_segment[_o];
         if (ofs == -1) {
-            printf("\tFirst Segment of Original Halfedge %i is -1?!\n", _o);
+            spdlog::error("\tFirst Segment of Original Halfedge %i is -1?!\n", _o);
             good = false;
             break;
         }
         int ols = last_segment(_o);
 
         if (this->opp[fs] != ols || fs != this->opp[ols]) {
-            printf("\tOpponent Structure of Segment %i is corrupted!\n", _h);
-            printf("\t\tfs = %i, ls = %i, ofs = %i, ols = %i\n", fs, ls, ofs, ols);
+            spdlog::error("\tOpponent Structure of Segment %i is corrupted!\n", _h);
+            spdlog::error("\t\tfs = %i, ls = %i, ofs = %i, ols = %i\n", fs, ls, ofs, ols);
             good = false;
         }
     }
@@ -1025,12 +1061,17 @@ bool OverlayProblem::OverlayMesh<Scalar>::check(Mesh<Scalar>* _m) {
         //Iterate all outgoing Edges...
         while (true) {
             int segment_type = edge_type[this->e(current_out)];
+            int segment_origin = origin[current_out];
             int current_seg = current_out;
 
             //Iterate the Segment...
             while (true) {
                 if (edge_type[this->e(current_seg)] != segment_type) {
-                    printf("Segment %i differs in Type from the other Segments!\n", current_seg);
+                    spdlog::error("Segment %i differs in Type from the other Segments!\n", current_seg);
+                    good = false;
+                }
+                if (origin[current_seg] != segment_origin) {
+                    spdlog::error("Segment %i differs in origin from the other Segments!\n", current_seg);
                     good = false;
                 }
 
@@ -1058,14 +1099,36 @@ bool OverlayProblem::OverlayMesh<Scalar>::check(Mesh<Scalar>* _m) {
         int edges = this->face_edge_count(i);
 
         if (edges >= 0 && edges <= 2) {
-            printf("Face %i has only %i Edges?\n", i, edges);
+            spdlog::error("Face %i has only %i Edges?\n", i, edges);
 
             good = false;
             break;
         }
     }
 
-    printf("Counts, N: %i, Prev: %i, To: %i, F: %i, O: %i, NE: %i\n", nc, n_prev, nto, nf, no, ne);
+    std::vector<bool> has_original_halfedge(_m->n_halfedges(), false);
+    for (int hi = 0; hi < this->n_halfedges(); ++ hi)
+    {
+        if (this->n[hi] == -1) continue; // Deleted halfedge
+        if (this->edge_type[hi] == ORIGINAL_EDGE)
+        {
+            has_original_halfedge[this->origin_of_origin[hi]] = true;
+        }
+        else if (this->edge_type[hi] == ORIGINAL_AND_CURRENT_EDGE)
+        {
+            has_original_halfedge[this->origin_of_origin[hi]] = true;
+        }
+    }
+    for (int hi = 0; hi < _m->n_halfedges(); ++ hi)
+    {
+        if (!has_original_halfedge[hi])
+        {
+            spdlog::error("Missing original halfedge {}", hi);
+            good = false;
+        }
+    }
+
+    spdlog::debug("Counts, N: %i, Prev: %i, To: %i, F: %i, O: %i, NE: %i\n", nc, n_prev, nto, nf, no, ne);
 
     return good;
 }

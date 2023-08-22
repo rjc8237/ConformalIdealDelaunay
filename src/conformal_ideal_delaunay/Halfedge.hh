@@ -245,6 +245,7 @@ void compute_l_from_uv(const Eigen::MatrixXd &uv,
     int n_he = he_to_corner.size();
     l.resize(n_he);
 
+    // WARNING: Assumes boundary facets at end of he array
     for (int he = 0; he < n_he; ++he)
     {
         // Get the uv vertices at the tip and tail of the halfedge

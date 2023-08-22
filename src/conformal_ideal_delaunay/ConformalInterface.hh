@@ -141,10 +141,6 @@ FV_to_double(
     Connectivity C;
     NOB_to_connectivity(next_he, opp, bnd_loops, C);
 
-    // Build the edge length array from the vertex positions
-    std::vector<Scalar> l;
-    compute_l_from_uv<Scalar>(uv, F_uv, he_to_corner, l);
-
     // Permute the target angles to match the new vertex indices of the halfedge mesh
     std::vector<Scalar> Theta_hat_perm(Theta_hat.size());
     for (int i = 0; i < Theta_hat_perm.size(); ++i)
@@ -161,6 +157,10 @@ FV_to_double(
         // Create trivial reflection information
         std::vector<char> type(n_he, 0);
         std::vector<int> R(n_he, 0);
+
+        // Build the edge length array from the vertex positions
+        std::vector<Scalar> l;
+        compute_l_from_uv<Scalar>(uv, F_uv, he_to_corner, l);
 
         // Create a halfedge structure for the mesh
         m.n = C.n;

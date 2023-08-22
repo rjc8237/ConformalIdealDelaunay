@@ -534,7 +534,7 @@ namespace OverlayProblem{
          * Creates a new Halfedge by extending the related Arrays. The Origin-Halfedge is set to -1 by default.
          * @return The ID of the new Halfedge.
          */
-        int create_halfedge(int type, int o0, int o1) {
+        int create_halfedge(int type, int o0, int o1, int oo0=0, int oo1=0) {
 
             int id = this->n_halfedges();
             this->n.push_back(-1);
@@ -558,8 +558,8 @@ namespace OverlayProblem{
             origin.push_back(o0);
             origin.push_back(o1);
 
-            origin_of_origin.push_back(0);
-            origin_of_origin.push_back(0);
+            origin_of_origin.push_back(oo0);
+            origin_of_origin.push_back(oo1);
 
             edge_type.push_back(type);
             edge_type.push_back(type);
