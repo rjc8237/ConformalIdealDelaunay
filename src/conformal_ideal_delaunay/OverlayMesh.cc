@@ -217,9 +217,6 @@ bool OverlayProblem::OverlayMesh<Scalar>::o_flip_ccw(Mesh<Scalar>* _m, int _h, b
         this->construct_flipped_current_diagonal(_m, _h0, first_opp_seg, start_seg, end_seg, Ptolemy);
     }
 
-    // FIXME
-    this->check(_m);
-
     return true;
 }
 
