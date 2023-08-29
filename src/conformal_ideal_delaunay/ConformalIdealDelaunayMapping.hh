@@ -980,7 +980,7 @@ public:
    * @param stats_params, statistics parameters, for details check the struct definitions on the top
    * @return flip sequence
    */
-  static std::tuple<VectorX, std::vector<int>> FindConformalMetric(OverlayMesh<Scalar>& m, const VectorX& u0, std::vector<int>& pt_fids, std::vector<Eigen::Matrix<Scalar, 3, 1>>& pt_bcs, const AlgorithmParameters& alg_params, const LineSearchParameters& ls_params, const StatsParameters& stats_params)
+  static std::tuple<VectorX, std::vector<int>, SolveStats<Scalar>> FindConformalMetric(OverlayMesh<Scalar>& m, const VectorX& u0, std::vector<int>& pt_fids, std::vector<Eigen::Matrix<Scalar, 3, 1>>& pt_bcs, const AlgorithmParameters& alg_params, const LineSearchParameters& ls_params, const StatsParameters& stats_params)
   {
     switch (stats_params.log_level){
       case 0: spdlog::set_level(spdlog::level::trace);    break;
@@ -1170,7 +1170,7 @@ public:
       cnt++;
     }
 
-    return std::make_tuple(u, delaunay_stats.flip_seq);
+    return std::make_tuple(u, delaunay_stats.flip_seq, solve_stats);
 
   }
 
