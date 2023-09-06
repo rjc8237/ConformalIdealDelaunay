@@ -57,6 +57,7 @@ struct DelaunayStats {
 template <typename Scalar>
 struct SolveStats { 
   int n_solves = 0, n_g = 0, n_checks = 0;
+  double solve_time;
   Scalar cetm_energy = 0;
 };
 
@@ -760,10 +761,14 @@ public:
         // Create matrix with correction
         mat = hessian_dof_fixed + a*id;
       }
+      
 
+      std::clock_t solve_start;
+      solve_start = std::clock();
       Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
       solver.compute(mat);
       VectorX d = -solver.solve(grad_dof_fixed);
+      solve_stats.solve_time = ( std::clock() - solve_start ) / (double) CLOCKS_PER_SEC;
       Scalar newton_decr = d.dot(grad_dof_fixed);
       if (solver.info() == Eigen::Success && newton_decr < 0)
       {
@@ -1001,6 +1006,8 @@ public:
 
     std::clock_t start;
     start = std::clock();
+    std::clock_t prev_time;
+    prev_time = std::clock();
 
     // Initialize u to the zero vector
     VectorX u = u0;
@@ -1068,15 +1075,27 @@ public:
       spdlog::debug("Finish first delaunay ptolemy");
     } 
     ComputeAngles(mc, u, alpha, cot_alpha);
-    std::ofstream mf;
+    std::ofstream mf, nf;
     if(stats_params.error_log){
-      mf.open(stats_params.output_dir+"/"+stats_params.name+".csv",std::ios_base::out);
-      mf << "itr, max error, min_u, max_u, lambda, newton_dec, do_reduction, cetm_e\n";
+      auto fname = stats_params.output_dir+"/conformal_iteration_error.csv";
+      std::fstream pf; pf.open(fname, std::ios_base::in);
+      mf.open(fname, std::ios_base::app);
+      
+      if(!(pf.peek() != std::ifstream::traits_type::eof()))
+        mf << "itr, max error, min_u, max_u, lambda, newton_dec, do_reduction, cetm_e\n";
+    }
+    if(stats_params.flip_count){
+      auto fname = stats_params.output_dir+"/conformal_iteration_times.csv";
+      std::fstream pf; pf.open(fname, std::ios_base::in);
+      nf.open(fname, std::ios_base::app);
+      
+      if(!(pf.peek() != std::ifstream::traits_type::eof()))
+        nf << "n_flips, solve_time, time\n";
     }
 
     VectorX currentg;
     Gradient(mc, alpha, currentg, solve_stats);
-    spdlog::info("itr(0) lm({}) flips({}) max_error({}))", lambda, delaunay_stats.n_flips, currentg.cwiseAbs().maxCoeff());
+    spdlog::debug("itr(0) lm({}) flips({}) max_error({}))", lambda, delaunay_stats.n_flips, currentg.cwiseAbs().maxCoeff());
     while (currentg.cwiseAbs().maxCoeff() >= alg_params.error_eps)
     {
       // Compute gradient and descent direction from Hessian (with efficient solver)
@@ -1090,6 +1109,10 @@ public:
       if(stats_params.error_log){
         solve_stats.cetm_energy = ConformalEquivalenceEnergy(mc, alpha, u);
         mf << solve_stats.n_solves << "," << std::setprecision(17) << currentg.cwiseAbs().maxCoeff() << "," <<u.minCoeff() << "," << u.maxCoeff() << "," << lambda << "," << newton_decr << "," << ls_params.do_reduction <<" , "<<solve_stats.cetm_energy<< std::endl;
+      }
+      if(stats_params.flip_count){
+        auto diff_time = ( std::clock() - prev_time ) / (double) CLOCKS_PER_SEC;
+        nf << delaunay_stats.n_flips << ", " << solve_stats.solve_time << ", " << diff_time << std::endl;
       }
       // Alternative termination conditons to error threshold
       if (lambda < alg_params.min_lambda)
@@ -1123,9 +1146,9 @@ public:
 
       // Display current iteration information
       if(ls_params.energy_cond)
-        spdlog::info("itr({}) lm({}) flips({}) newton_decr({}) max_error({}), cetm_e({}))", solve_stats.n_solves, lambda, delaunay_stats.n_flips, newton_decr, currentg.cwiseAbs().maxCoeff(), solve_stats.cetm_energy);
+        spdlog::debug("itr({}) lm({}) flips({}) newton_decr({}) max_error({}), cetm_e({}))", solve_stats.n_solves, lambda, delaunay_stats.n_flips, newton_decr, currentg.cwiseAbs().maxCoeff(), solve_stats.cetm_energy);
       else
-        spdlog::info("itr({}) lm({}) flips({}) newton_decr({}) max_error({}))", solve_stats.n_solves, lambda, delaunay_stats.n_flips, newton_decr, currentg.cwiseAbs().maxCoeff());
+        spdlog::debug("itr({}) lm({}) flips({}) newton_decr({}) max_error({}))", solve_stats.n_solves, lambda, delaunay_stats.n_flips, newton_decr, currentg.cwiseAbs().maxCoeff());
 
       ComputeAngles(mc, u, alpha, cot_alpha);
 
@@ -1133,6 +1156,7 @@ public:
 
     // Output flip stats
     if(stats_params.error_log) mf.close();
+    if(stats_params.flip_count) nf.close();
     auto total_time = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
     if(stats_params.flip_count){
       auto fname = stats_params.output_dir+"/flips_stats.csv";
