@@ -5,6 +5,7 @@
 template <typename Scalar>
 int check_flip(const Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> &uv, const Eigen::MatrixXi &Fn, bool print_flip)
 {
+#ifdef WITH_MPFR
   using mpfr::mpreal;
   int fl = 0;
   mpfr::mpreal::set_default_prec(4*mpfr::mpreal::get_default_prec());
@@ -52,8 +53,11 @@ int check_flip(const Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> &uv, 
   }
   mpfr::mpreal::set_default_prec(mpfr::mpreal::get_default_prec()/4);
   return fl;
+#endif
 }
 
 // explicit instantiation
 template int check_flip<double>(const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> &, const Eigen::MatrixXi &, bool);
+#ifdef WITH_MPFR
 template int check_flip<mpfr::mpreal>(const Eigen::Matrix<mpfr::mpreal, Eigen::Dynamic, Eigen::Dynamic> &, const Eigen::MatrixXi &, bool);
+#endif
