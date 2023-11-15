@@ -813,7 +813,7 @@ std::tuple<std::vector<Scalar>, std::vector<Scalar>, std::vector<bool>,
         int h0 = i, h1 = m_o_tri.opp[h0];
         int ft0 = f_labels[m_o_tri.f[h0]];
         int ft1 = f_labels[m_o_tri.f[h1]];
-        if(std::abs<Scalar>(m_o_tri._m.l[h0]-m_o_tri._m.l[h1]) > 1e-8 && ft0 == ft1 && ft0 == 1){
+        if(abs(m_o_tri._m.l[h0]-m_o_tri._m.l[h1]) > 1e-8 && ft0 == ft1 && ft0 == 1){
             spdlog::error("halfedge lengths mismatch, {}: {}, {}: {}; {}/{}", h0, m_o_tri._m.l[h0], h1, m_o_tri._m.l[h1], ft0, ft1);
         }
         int f0 = m_o_tri.f[h0];
