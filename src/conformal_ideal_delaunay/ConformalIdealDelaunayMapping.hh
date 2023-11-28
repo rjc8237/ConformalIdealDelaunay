@@ -1,34 +1,34 @@
 /*********************************************************************************
-*  This file is part of reference implementation of SIGGRAPH Asia 2021 Paper     *
-*  `Efficient and Robust Discrete Conformal Equivalence with Boundary`           *
-*  v1.0                                                                          *
-*                                                                                *
-*  The MIT License                                                               *
-*                                                                                *
-*  Permission is hereby granted, free of charge, to any person obtaining a       *
-*  copy of this software and associated documentation files (the "Software"),    *
-*  to deal in the Software without restriction, including without limitation     *
-*  the rights to use, copy, modify, merge, publish, distribute, sublicense,      *
-*  and/or sell copies of the Software, and to permit persons to whom the         *
-*  Software is furnished to do so, subject to the following conditions:          *
-*                                                                                *
-*  The above copyright notice and this permission notice shall be included in    *
-*  all copies or substantial portions of the Software.                           *
-*                                                                                *
-*  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR    *
-*  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,      *
-*  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE  *
-*  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER        *
-*  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING       *
-*  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS  *
-*  IN THE SOFTWARE.                                                              *
-*                                                                                *
-*  Author(s):                                                                    *
-*  Marcel Campen, Institute for Computer Science, Osnabrück University, Germany. *
-*  Ryan Capouellez, Hanxiao Shen, Leyi Zhu, Daniele Panozzo, Denis Zorin,        *
-*  Courant Institute of Mathematical Sciences, New York University, USA          *
-*                                          *                                     *
-*********************************************************************************/
+ *  This file is part of reference implementation of SIGGRAPH Asia 2021 Paper     *
+ *  `Efficient and Robust Discrete Conformal Equivalence with Boundary`           *
+ *  v1.0                                                                          *
+ *                                                                                *
+ *  The MIT License                                                               *
+ *                                                                                *
+ *  Permission is hereby granted, free of charge, to any person obtaining a       *
+ *  copy of this software and associated documentation files (the "Software"),    *
+ *  to deal in the Software without restriction, including without limitation     *
+ *  the rights to use, copy, modify, merge, publish, distribute, sublicense,      *
+ *  and/or sell copies of the Software, and to permit persons to whom the         *
+ *  Software is furnished to do so, subject to the following conditions:          *
+ *                                                                                *
+ *  The above copyright notice and this permission notice shall be included in    *
+ *  all copies or substantial portions of the Software.                           *
+ *                                                                                *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR    *
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,      *
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE  *
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER        *
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING       *
+ *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS  *
+ *  IN THE SOFTWARE.                                                              *
+ *                                                                                *
+ *  Author(s):                                                                    *
+ *  Marcel Campen, Institute for Computer Science, Osnabrück University, Germany. *
+ *  Ryan Capouellez, Hanxiao Shen, Leyi Zhu, Daniele Panozzo, Denis Zorin,        *
+ *  Courant Institute of Mathematical Sciences, New York University, USA          *
+ *                                          *                                     *
+ *********************************************************************************/
 
 #ifndef CONFORMAL_IDEAL_DELAUNAY_MAPPING_HH
 #define CONFORMAL_IDEAL_DELAUNAY_MAPPING_HH
@@ -47,54 +47,59 @@
 
 using namespace OverlayProblem;
 
-struct DelaunayStats {
-// Delaunay
+struct DelaunayStats
+{
+  // Delaunay
   int n_flips = 0, n_flips_s = 0, n_flips_t = 0, n_flips_q = 0, n_flips_12 = 0, n_nde = -1;
-   bool flip_count = false;          // when true: write out stats for different kinds of flips
-   std::vector<int> flip_seq;
+  bool flip_count = false; // when true: write out stats for different kinds of flips
+  std::vector<int> flip_seq;
 };
 
 template <typename Scalar>
-struct SolveStats { 
+struct SolveStats
+{
   int n_solves = 0, n_g = 0, n_checks = 0;
   double solve_time;
   Scalar cetm_energy = 0;
 };
 
-struct StatsParameters{
-  bool flip_count = false;      // when true: collect stats on different types of edge flips
-  std::string name = "";        // name of the model that's been tested - for logging purpose
-  std::string output_dir = "";  // directory name for genearting all stats
-  bool error_log = false;       // when true: write out per-newton iterations stats
-  bool print_summary = false;   // when true: add final stats of optimization to summary file
-  int log_level = 2;            // controlling detail of console logging
+struct StatsParameters
+{
+  bool flip_count = false;     // when true: collect stats on different types of edge flips
+  std::string name = "";       // name of the model that's been tested - for logging purpose
+  std::string output_dir = ""; // directory name for genearting all stats
+  bool error_log = false;      // when true: write out per-newton iterations stats
+  bool print_summary = false;  // when true: add final stats of optimization to summary file
+  int log_level = 2;           // controlling detail of console logging
 };
 
-struct LineSearchParameters { 
-  double c1 = 1e-4;                  // c1 for armijo condition
-  double c2 = 0.9;                   // c2 for curvature condition
-  bool energy_samples = false;       // This boolean is only used for generating figure 4 in paper
-  bool energy_cond = false;          // when true: use energy decrease as line search stop criterion
-  bool do_reduction = false;         // when true: reduce step, if the components of descent direction vary too much 
+struct LineSearchParameters
+{
+  double c1 = 1e-4;                         // c1 for armijo condition
+  double c2 = 0.9;                          // c2 for curvature condition
+  bool energy_samples = false;              // This boolean is only used for generating figure 4 in paper
+  bool energy_cond = false;                 // when true: use energy decrease as line search stop criterion
+  bool do_reduction = false;                // when true: reduce step, if the components of descent direction vary too much
   double descent_dir_max_variation = 1e-10; // threshold for descent direction component max difference to decrease step
-  bool do_grad_norm_decrease = true; // when true: require gradient norm to decrease at each iteration
-  double bound_norm_thres = 1e-10;   // threshold to drop gradient decrease requirement when step lambda is below this
-  double lambda0 = 1.0;              // starting lambda value for the line search, normally 1
-  bool reset_lambda = true;          // when true: start with lambda = lambda0 for each newton iteration; if false, start with lambda from the previous 
+  bool do_grad_norm_decrease = true;        // when true: require gradient norm to decrease at each iteration
+  double bound_norm_thres = 1e-10;          // threshold to drop gradient decrease requirement when step lambda is below this
+  double lambda0 = 1.0;                     // starting lambda value for the line search, normally 1
+  bool reset_lambda = true;                 // when true: start with lambda = lambda0 for each newton iteration; if false, start with lambda from the previous
 };
 
-struct AlgorithmParameters {
-  int MPFR_PREC = 100;           // precision if done in multiprecision
-  bool initial_ptolemy = false;  // when true: use ptolemey flips for the first MakeDelaunay  Do we really need this?
+struct AlgorithmParameters
+{
+  int MPFR_PREC = 100;          // precision if done in multiprecision
+  bool initial_ptolemy = false; // when true: use ptolemey flips for the first MakeDelaunay  Do we really need this?
   // termination
-  double error_eps = 0;          // max angle error tolerance, terminate if below
-  double min_lambda = 1e-16;     // terminate if lambda drops below this threshold
-  double newton_decr_thres = 0;  // terminate if the newton decrement is above this threshold (it is negative)
-  int max_itr = 500;             // upper bound for newton iterations
-  bool bypass_overlay = false;   // avoid overlay computation
-  int layout_root = -1;          // select vertex on boundary as root for constructing spanning tree connecting cones
-  bool use_edge_flips = true;    // optimize energy without intrinsic edge flips if false
- };
+  double error_eps = 0;         // max angle error tolerance, terminate if below
+  double min_lambda = 1e-16;    // terminate if lambda drops below this threshold
+  double newton_decr_thres = 0; // terminate if the newton decrement is above this threshold (it is negative)
+  int max_itr = 500;            // upper bound for newton iterations
+  bool bypass_overlay = false;  // avoid overlay computation
+  int layout_root = -1;         // select vertex on boundary as root for constructing spanning tree connecting cones
+  bool use_edge_flips = true;   // optimize energy without intrinsic edge flips if false
+};
 
 // Scalar: a floating point type, either double or MPFR
 template <typename Scalar>
@@ -106,7 +111,7 @@ public:
   /**
    * Interior angle and its cotangent computed for the whole mesh given decorated per-vertex u values,
    * the angles are computed via rescaled conformal edge lengths.
-   * 
+   *
    * @param m Mesh data structure
    * @param u vector of Scalar size equal to number of vertices of mesh, the per-vertex logarithmic scale factors
    * @param alpha vector of Scalar size equal to number of halfedges of mesh,
@@ -117,9 +122,9 @@ public:
    *              ith halfedge.
    * @return void
    */
-  static void ComputeAngles(const Mesh<Scalar>& m, const VectorX& u, VectorX& alpha, VectorX& cot_alpha)
+  static void ComputeAngles(const Mesh<Scalar> &m, const VectorX &u, VectorX &alpha, VectorX &cot_alpha)
   {
-    
+
     alpha.setZero(m.n_halfedges());
     cot_alpha.setZero(m.n_halfedges());
 
@@ -132,7 +137,7 @@ public:
     else
       pi = Scalar(M_PI);
 #else
-      pi = Scalar(M_PI);
+    pi = Scalar(M_PI);
 #endif
 
 #pragma omp parallel for
@@ -147,7 +152,7 @@ public:
       Scalar ui = u[i];
       Scalar uj = u[j];
       Scalar uk = u[k];
-      Scalar uijk_avg = (ui + uj + uk)/3.0; // Scale lengths for numerical stability
+      Scalar uijk_avg = (ui + uj + uk) / 3.0; // Scale lengths for numerical stability
       Scalar li = ell(m.l[m.e(hi)], uj, uk, uijk_avg);
       Scalar lj = ell(m.l[m.e(hj)], uk, ui, uijk_avg);
       Scalar lk = ell(m.l[m.e(hk)], ui, uj, uijk_avg);
@@ -171,24 +176,30 @@ public:
       alpha[hi] = 0.0, alpha[hj] = 0.0, alpha[hk] = 0.0;
       // li: l12, lj: l23, lk: l31
       Scalar l12 = li, l23 = lj, l31 = lk;
-      const Scalar t31 = +l12+l23-l31,
-                   t23 = +l12-l23+l31,
-                   t12 = -l12+l23+l31;
+      const Scalar t31 = +l12 + l23 - l31,
+                   t23 = +l12 - l23 + l31,
+                   t12 = -l12 + l23 + l31;
       // valid triangle
-      if( t31 > 0 && t23 > 0 && t12 > 0 ){
-        const Scalar l123 = l12+l23+l31;
-        const Scalar denom = sqrt(t12*t23*t31*l123);
-        alpha[hj] = 2*atan2(t12*t31,denom); // a1 l23
-        alpha[hk] = 2*atan2(t23*t12,denom); // a2 l31
-        alpha[hi] = 2*atan2(t31*t23,denom); // a3 l12
-      }else if( t31 <= 0 ) alpha[hk] = pi;
-       else if( t23 <= 0 ) alpha[hj] = pi;
-       else if( t12 <= 0 ) alpha[hi] = pi;
-       else alpha[hj] = pi;
+      if (t31 > 0 && t23 > 0 && t12 > 0)
+      {
+        const Scalar l123 = l12 + l23 + l31;
+        const Scalar denom = sqrt(t12 * t23 * t31 * l123);
+        alpha[hj] = 2 * atan2(t12 * t31, denom); // a1 l23
+        alpha[hk] = 2 * atan2(t23 * t12, denom); // a2 l31
+        alpha[hi] = 2 * atan2(t31 * t23, denom); // a3 l12
+      }
+      else if (t31 <= 0)
+        alpha[hk] = pi;
+      else if (t23 <= 0)
+        alpha[hj] = pi;
+      else if (t12 <= 0)
+        alpha[hi] = pi;
+      else
+        alpha[hj] = pi;
 #endif
     }
   }
-  
+
   /**
    * Milnor’s Lobachevsky function, see appendix A in http://www.multires.caltech.edu/pubs/ConfEquiv.pdf
    */
@@ -199,7 +210,7 @@ public:
 
   /**
    * Compute angle sums at each vertex of given mesh according to per-corner angles
-   * 
+   *
    * @param m Mesh data structure
    * @param alpha vector of Scalar size equal to number of halfedges of mesh,
    *              ith entry corresponds to the interior angle opposite to
@@ -207,7 +218,7 @@ public:
    * @return VectorX vector of Scalar size equal to number of vertices of mesh,
    *         each entry is the total angle sum at each vertex.
    */
-  static VectorX Theta(const Mesh<Scalar>& m, const VectorX& alpha)
+  static VectorX Theta(const Mesh<Scalar> &m, const VectorX &alpha)
   {
     VectorX t(m.n_ind_vertices());
     t.setZero();
@@ -219,22 +230,22 @@ public:
   }
 
   /**
-   * Compute conformal-equivalence-energy (see https://cims.nyu.edu/gcl/papers/2021-Conformal.pdf section 4) 
+   * Compute conformal-equivalence-energy (see https://cims.nyu.edu/gcl/papers/2021-Conformal.pdf section 4)
    * of a given mesh with per-vertex logarithmic scale factors
-   * 
+   *
    * @param m Mesh data structure
    * @param angles vector of Scalar with size equal to number of halfedges, produced by ComputeAngles function
    * @param u vector of Scalar size equal to number of vertices of mesh, the per-vertex logarithmic scale factors
    * @return Scalar Energy of the mesh with given conformal metric
    */
-  static Scalar ConformalEquivalenceEnergy(Mesh<Scalar> &m, const VectorX& angles, const VectorX &u)
+  static Scalar ConformalEquivalenceEnergy(Mesh<Scalar> &m, const VectorX &angles, const VectorX &u)
   {
 
     auto func_f = [](
-      const Scalar l12, const Scalar l23, const Scalar l31,  
-      const Scalar u1,  const Scalar u2,  const Scalar u3, 
-      const Scalar a1, const Scalar a2, const Scalar a3
-    ){
+                      const Scalar l12, const Scalar l23, const Scalar l31,
+                      const Scalar u1, const Scalar u2, const Scalar u3,
+                      const Scalar a1, const Scalar a2, const Scalar a3)
+    {
       // h1->hi, h2->hj, h3->hk
       Scalar s12 = u1 + u2 - 2 * u3;
       Scalar s23 = u2 + u3 - 2 * u1;
@@ -283,32 +294,32 @@ public:
   }
 
   /**
-   * Compute the gradient of conformal-equivalence-energy, which is equal to the per-vertex angle defects 
-   * 
+   * Compute the gradient of conformal-equivalence-energy, which is equal to the per-vertex angle defects
+   *
    * @param m Mesh data structure
    * @param angles vector of Scalar with size equal to number of halfedges, produced by ComputeAngles function
    * @param g vector of size equal to number of vertices, the gradient.
    * @param solve_stats struct collecting info for solvings through out the algorithm
    * @return void
    */
-  static void Gradient(const Mesh<Scalar>& m, const VectorX& angles, VectorX& g, SolveStats<Scalar>& solve_stats)
+  static void Gradient(const Mesh<Scalar> &m, const VectorX &angles, VectorX &g, SolveStats<Scalar> &solve_stats)
   {
     solve_stats.n_g++;
     g.setZero(m.n_ind_vertices());
     auto angle_sums = Theta(m, angles);
-    for(int i = 0; i < g.rows(); i++)
+    for (int i = 0; i < g.rows(); i++)
       g[i] = (m.fixed_dof[i]) ? 0.0 : m.Th_hat[i] - angle_sums(i);
   }
 
   /**
    * Compute the Hessian of conformal-equivalence-energy, which is the cotangent laplacian.
-   * 
+   *
    * @param m Mesh data structure
    * @param cot_alpha vector of Scalar with size equal to number of halfedges, produced by ComputeAngles function
    * @param H (output), Sparse Matrix with size #v*#v.
    * @return void
    */
-  static void Hessian(const Mesh<Scalar>& m, const VectorX& cot_alpha, Eigen::SparseMatrix<Scalar>& H)
+  static void Hessian(const Mesh<Scalar> &m, const VectorX &cot_alpha, Eigen::SparseMatrix<Scalar> &H)
   {
     H.resize(m.n_ind_vertices(), m.n_ind_vertices());
     typedef Eigen::Triplet<Scalar> Trip;
@@ -330,9 +341,9 @@ public:
 
   /**
    * Given original edge length and two scale factors defined on two endpoints, compute the rescaled edge lengths.
-   * 
+   *
    * @param l, Scalar, original edge length
-   * @param u0, Scalar, first scale factor 
+   * @param u0, Scalar, first scale factor
    * @param u1, Scalar, second scale factor
    * @param offset, Scalar,  a common factor to be subtracted from the total scale, added for numerical stability.
    * @return Scalar rescaled edge length
@@ -343,19 +354,19 @@ public:
   }
 
   /**
-   * Predicate, checking whether the two neighboring triangles of given halfedge in the mesh 
+   * Predicate, checking whether the two neighboring triangles of given halfedge in the mesh
    * with given scale factor satisfying delaunay condition after rescaling.
-   * 
+   *
    * @param m, mesh data structure
    * @param u, #v vector, per-vertex scale factors
    * @param e, int, halfedge id
    * @param solve_stats struct collecting info for solvings through out the algorithm
    * @return bool, true indicates delaunay condition is violated.
    */
-  static bool NonDelaunay(Mesh<Scalar>& m, const VectorX& u, int e, SolveStats<Scalar>& solve_stats)
+  static bool NonDelaunay(Mesh<Scalar> &m, const VectorX &u, int e, SolveStats<Scalar> &solve_stats)
   {
     if (m.type[m.h0(e)] == 4)
-      return false; //virtual diagonal of symmetric trapezoid
+      return false; // virtual diagonal of symmetric trapezoid
     solve_stats.n_checks++;
     int hij = m.h0(e);
     int hjk = m.n[hij];
@@ -371,295 +382,58 @@ public:
     Scalar uj = u[j];
     Scalar uk = u[k];
     Scalar um = u[n];
-    Scalar uijk_avg = (ui + uj + uk)/3.0;
-    Scalar ujim_avg = (uj + ui + um)/3.0;
+    Scalar uijk_avg = (ui + uj + uk) / 3.0;
+    Scalar ujim_avg = (uj + ui + um) / 3.0;
     Scalar ljk = ell(m.l[m.e(hjk)], uj, uk, uijk_avg);
     Scalar lki = ell(m.l[m.e(hki)], uk, ui, uijk_avg);
     Scalar lij = ell(m.l[m.e(hij)], ui, uj, uijk_avg);
     Scalar lji = ell(m.l[m.e(hji)], uj, ui, ujim_avg);
     Scalar lmj = ell(m.l[m.e(hmj)], um, uj, ujim_avg);
     Scalar lim = ell(m.l[m.e(him)], ui, um, ujim_avg);
-    
+
     bool pre_flip_check = (ljk / lki + lki / ljk - (lij / ljk) * (lij / lki)) + (lmj / lim + lim / lmj - (lji / lmj) * (lji / lim)) < 0;
-    
+
     // additionally check whether delaunay is violated after flip
-    // we consider the configuration to 'violate delaunay condition' only if 
+    // we consider the configuration to 'violate delaunay condition' only if
     // it does not satisfy delaunay check AND post-flip configuration satisfies delaunay condition.
-    Scalar umki_avg = (um + uk + ui)/3.0;
-    Scalar ukmj_avg = (uk + um + uj)/3.0;
+    Scalar umki_avg = (um + uk + ui) / 3.0;
+    Scalar ukmj_avg = (uk + um + uj) / 3.0;
     Scalar _lkm_non_scaled = (m.l[m.e(hjk)] * m.l[m.e(him)] + m.l[m.e(hki)] * m.l[m.e(hmj)]) / m.l[m.e(hij)];
-    Scalar _lkm = ell(_lkm_non_scaled , uk, um, ukmj_avg);
+    Scalar _lkm = ell(_lkm_non_scaled, uk, um, ukmj_avg);
     Scalar _lmj = ell(m.l[m.e(hmj)], um, uj, ukmj_avg);
     Scalar _ljk = ell(m.l[m.e(hjk)], uj, uk, ukmj_avg);
-    Scalar _lmk = ell(_lkm_non_scaled , um, uk, umki_avg);
-    Scalar _lki = ell(m.l[m.e(hki)] , uk, ui, umki_avg);
-    Scalar _lim = ell(m.l[m.e(him)] , ui, um, umki_avg);
+    Scalar _lmk = ell(_lkm_non_scaled, um, uk, umki_avg);
+    Scalar _lki = ell(m.l[m.e(hki)], uk, ui, umki_avg);
+    Scalar _lim = ell(m.l[m.e(him)], ui, um, umki_avg);
     bool post_flip_check = (_lki / _lim + _lim / _lki - (_lmk / _lki) * (_lmk / _lim)) + (_ljk / _lmj + _lmj / _ljk - (_lkm / _ljk) * (_lkm / _lmj)) < 0;
     return pre_flip_check && !post_flip_check;
   }
 
   /**
    * Flip the given halfedge in mesh and update the edge length accordingly.
-   * 
+   *
    * @param m, mesh data structure
-   * @param u, #v vector, per-vertex scale factors
    * @param e, int, halfedge id
    * @param q, set<int>, set of possible non-Delaunay halfedges
    * @param delaunay_stats struct collecting info for delaunay flips through out the algorithm
    * @param Ptolemy, bool, when true the edge length is updated via ptolemy formula, otherwise using law of cosine.
    * @return bool, true indicates flip succeeds.
    */
-  static bool EdgeFlip(std::set<int>& q, Mesh<Scalar>& m, const VectorX& u, int e, int tag, DelaunayStats& delaunay_stats, bool Ptolemy = true)
+  static bool EdgeFlip(std::set<int> &q, Mesh<Scalar> &m, int e, int tag, DelaunayStats &delaunay_stats, bool Ptolemy = true)
   {
-    Mesh<Scalar>& mc = m.cmesh();
-
-    int hij = mc.h0(e);
-    int hjk = mc.n[hij];
-    int hki = mc.n[hjk];
-    int hji = mc.h1(e);
-    int him = mc.n[hji];
-    int hmj = mc.n[him];
-
-    // Add edges of the boundary of the triangle flap to the set q
-    q.insert(mc.h0(hjk));
-    q.insert(mc.h0(hki));
-    q.insert(mc.h0(him));
-    q.insert(mc.h0(hmj));
-
-    std::vector<char> &type = mc.type;
-
-    std::vector<int> to_flip;
-    if (type[hij] > 0) // skip in non-symmetric mode for efficiency
-    {
-      int types;
-      bool reverse = true;
-      if (type[hki] <= type[hmj])
-      {
-        types = type[hki] * 100000 + type[hjk] * 10000 + type[hij] * 1000 + type[hji] * 100 + type[him] * 10 + type[hmj];
-        reverse = false;
-      }
-      else
-        types = type[hmj] * 100000 + type[him] * 10000 + type[hji] * 1000 + type[hij] * 100 + type[hjk] * 10 + type[hki];
-
-      if (types == 231123 || types == 231132 || types == 321123)
-        return false; // t1t irrelevant
-      if (types == 132213 || types == 132231 || types == 312213)
-        return false; // t2t irrelevant
-      if (types == 341143)
-        return false; // q1q irrelevant
-      if (types == 342243)
-        return false; // q2q irrelevant
-
-      if (types == 111222 || types == 123312)
-        delaunay_stats.n_flips_s++;
-      if (types == 111123 || types == 111132)
-        delaunay_stats.n_flips_t++;
-      if (types == 213324 || types == 123314 || types == 111143 || types == 413324 || types == 23314)
-        delaunay_stats.n_flips_q++;
-      if (types == 111111)
-        delaunay_stats.n_flips_12++;
-      switch (types)
-      {
-      case 111222: // (1|2)
-        type[hij] = type[hji] = 3;
-        mc.R[hij] = hij;
-        mc.R[hji] = hji;
-        break;
-      case 123312: // (t,_,t)
-        type[hij] = type[hki];
-        type[hji] = type[hmj];
-        mc.R[hij] = hji;
-        mc.R[hji] = hij;
-        break;
-      case 111123: // (1,1,t)
-        type[hij] = type[hji] = 4;
-        mc.R[hij] = hij;
-        mc.R[hji] = hji;
-        break;
-      case 111132: // (1,1,t) mirrored
-        type[hij] = type[hji] = 4;
-        mc.R[hij] = hij;
-        mc.R[hji] = hji;
-        break;
-      case 222214: // (2,2,t) following (1,1,t) mirrored
-        type[hij] = type[hji] = 3;
-        to_flip.push_back(6); // to make sure all fake diagonals are top left to bottom right
-        mc.R[hij] = hij;
-        mc.R[hji] = hji;
-        break;
-      case 142222: // (2,2,t) following (1,1,t)
-        type[hij] = type[hji] = 3;
-        mc.R[hij] = hij;
-        mc.R[hji] = hji;
-        break;
-      case 213324: // (t,_,q)
-        type[hij] = type[hji] = 2;
-        to_flip.push_back(6);
-        break;
-      case 134412: // (t,_,q) 2nd
-        type[hij] = type[hji] = 1;
-        if (!reverse)
-        {
-          mc.R[hji] = hmj;
-          mc.R[hmj] = hji;
-          mc.R[mc.opp[hji]] = mc.opp[hmj];
-          mc.R[mc.opp[hmj]] = mc.opp[hji];
-        }
-        else
-        {
-          mc.R[hij] = hki;
-          mc.R[hki] = hij;
-          mc.R[mc.opp[hij]] = mc.opp[hki];
-          mc.R[mc.opp[hki]] = mc.opp[hij];
-        }
-        break;
-      case 123314: // (q,_,t)
-        type[hij] = type[hji] = 1;
-        to_flip.push_back(6);
-        break;
-      case 124432: // (q,_,t) 2nd
-        type[hij] = type[hji] = 2;
-        if (!reverse)
-        {
-          mc.R[hki] = hij;
-          mc.R[hij] = hki;
-          mc.R[mc.opp[hki]] = mc.opp[hij];
-          mc.R[mc.opp[hij]] = mc.opp[hki];
-        }
-        else
-        {
-          mc.R[hmj] = hji;
-          mc.R[hji] = hmj;
-          mc.R[mc.opp[hmj]] = mc.opp[hji];
-          mc.R[mc.opp[hji]] = mc.opp[hmj];
-        }
-        break;
-      case 111143: // (1,1,q)
-        type[hij] = type[hji] = 4;
-        mc.R[hij] = hij;
-        mc.R[hji] = hji;
-        break;
-      case 222243: // (2,2,q) following (1,1,q)
-        type[hij] = type[hji] = 4;
-        to_flip.push_back(5);
-        mc.R[hij] = hij;
-        mc.R[hji] = hji;
-        break;
-      case 144442: // (1,1,q)+(2,2,q) 3rd
-        type[hij] = type[hji] = 3;
-        mc.R[hij] = hij;
-        mc.R[hji] = hji;
-        break;
-      case 413324: // (q,_,q)
-        type[hij] = type[hji] = 4;
-        to_flip.push_back(6);
-        to_flip.push_back(1);
-        mc.R[hij] = hij;
-        mc.R[hji] = hji;
-        break;
-      case 423314: // (q,_,q) opp
-        type[hij] = type[hji] = 4;
-        to_flip.push_back(1);
-        to_flip.push_back(6);
-        mc.R[hij] = hij;
-        mc.R[hji] = hji;
-        break;
-      case 134414: // (q,_,q) 2nd
-        type[hij] = type[hji] = 1;
-        break;
-      case 234424: // (q,_,q) 3rd
-        type[hij] = type[hji] = 2;
-        if (!reverse)
-        {
-          mc.R[hji] = mc.n[mc.n[mc.opp[mc.n[mc.n[hji]]]]]; // attention: hji is not yet flipped here, hence twice .n[]
-          mc.R[mc.n[mc.n[mc.opp[mc.n[mc.n[hji]]]]]] = hji;
-          mc.R[mc.opp[hji]] = mc.opp[mc.R[hji]];
-          mc.R[mc.opp[mc.R[hji]]] = mc.opp[hji];
-        }
-        else
-        {
-          mc.R[hij] = mc.n[mc.n[mc.opp[mc.n[mc.n[hij]]]]];
-          mc.R[mc.n[mc.n[mc.opp[mc.n[mc.n[hij]]]]]] = hij;
-          mc.R[mc.opp[hij]] = mc.opp[mc.R[hij]];
-          mc.R[mc.opp[mc.R[hij]]] = mc.opp[hij];
-        }
-        break;
-      case 314423: // fake diag switch following (2,2,t) following (1,1,t) mirrored
-        break;
-      case 324413: // fake diag switch (opp) following (2,2,t) following (1,1,t) mirrored
-        break;
-      case 111111:
-        break;
-      case 222222:
-        break;
-      case 000000:
-        type[hij] = type[hji] = 0; // for non-symmetric mode
-        break;
-      default:
-        spdlog::error(" (attempted to flip edge that should never be non-Delaunay (type{})).", types);
-        return false;
-      }
-
-      if (reverse)
-      {
-        for (int i = 0; i < to_flip.size(); i++)
-          to_flip[i] = 7 - to_flip[i];
-      }
-    }
-
-    delaunay_stats.n_flips++;
-    if (Ptolemy)
-    {
-      delaunay_stats.flip_seq.push_back(hij);
-    }
-    else
-    {
-      delaunay_stats.flip_seq.push_back(-hij-1);
-    }
-    if (!m.flip_ccw(hij, Ptolemy))
-    {
-      spdlog::error(" EDGE COULD NOT BE FLIPPED! ");
-    }
-    if (tag == 1)
-    {
-      m.flip_ccw(hij, Ptolemy);
-      m.flip_ccw(hij, Ptolemy);
-      if (Ptolemy)
-      {
-        delaunay_stats.flip_seq.push_back(hij);
-        delaunay_stats.flip_seq.push_back(hij);
-      }
-      else
-      {
-        delaunay_stats.flip_seq.push_back(-hij-1);
-        delaunay_stats.flip_seq.push_back(-hij-1);
-      }
-    } // to make it cw on side 2
-
-    // Add edges of the boundary of the triangle flap to the set q
-    q.insert(mc.h0(hjk));
-    q.insert(mc.h0(hki));
-    q.insert(mc.h0(him));
-    q.insert(mc.h0(hmj));
-
-    for (int i = 0; i < to_flip.size(); i++)
-    {
-      if (to_flip[i] == 1)
-        EdgeFlip(q, m, u, mc.e(hki), 2, delaunay_stats, Ptolemy);
-      if (to_flip[i] == 2)
-        EdgeFlip(q, m, u, mc.e(hjk), 2, delaunay_stats, Ptolemy);
-      if (to_flip[i] == 5)
-        EdgeFlip(q, m, u, mc.e(him), 2, delaunay_stats, Ptolemy);
-      if (to_flip[i] == 6)
-        EdgeFlip(q, m, u, mc.e(hmj), 2, delaunay_stats, Ptolemy);
-    }
-
-    return true;
+    FlipStats flip_stats;
+    bool success = ::EdgeFlip<Scalar>(m, e, tag, delaunay_stats.flip_seq, q, flip_stats, Ptolemy);
+    delaunay_stats.n_flips += flip_stats.n_flips;
+    delaunay_stats.n_flips_12 += flip_stats.n_flips_12;
+    delaunay_stats.n_flips_q += flip_stats.n_flips_q;
+    delaunay_stats.n_flips_s += flip_stats.n_flips_s;
+    delaunay_stats.n_flips_t += flip_stats.n_flips_t;
+    return success;
   }
-  
+
   /**
    * Repeatedly perform edge flip operations until the rescaled triangles edges satisfying delaunay condition for all.
-   * 
+   *
    * @param m, mesh data structure
    * @param u, #v vector, per-vertex scale factors
    * @param delaunay_stats struct collecting info for delaunay flips through out the algorithm
@@ -667,9 +441,9 @@ public:
    * @param Ptolemy, bool, when true the edge length is updated via ptolemy formula, otherwise using law of cosine.
    * @return void.
    */
-  static void MakeDelaunay(Mesh<Scalar>& m, const VectorX& u, DelaunayStats& delaunay_stats, SolveStats<Scalar>& solve_stats, bool Ptolemy = true)
+  static void MakeDelaunay(Mesh<Scalar> &m, const VectorX &u, DelaunayStats &delaunay_stats, SolveStats<Scalar> &solve_stats, bool Ptolemy = true)
   {
-    Mesh<Scalar>& mc = m.cmesh();
+    Mesh<Scalar> &mc = m.cmesh();
     std::set<int> q;
     for (int i = 0; i < mc.n_halfedges(); i++)
     {
@@ -677,7 +451,7 @@ public:
         continue;
       int type0 = mc.type[mc.h0(i)];
       int type1 = mc.type[mc.h1(i)];
-      if (type0 == 0 || type0 == 1 || type1 == 1 || type0 == 3) //type 22 edges are flipped below; type 44 edges (virtual diagonals) are never flipped.
+      if (type0 == 0 || type0 == 1 || type1 == 1 || type0 == 3) // type 22 edges are flipped below; type 44 edges (virtual diagonals) are never flipped.
         q.insert(i);
     }
     while (!q.empty())
@@ -691,14 +465,14 @@ public:
         int Re = -1;
         if (type0 == 1 && type1 == 1)
           Re = mc.e(mc.R[mc.h0(e)]);
-        if (!EdgeFlip(q, m, u, e, 0, delaunay_stats, Ptolemy))
+        if (!EdgeFlip(q, m, e, 0, delaunay_stats, Ptolemy))
           continue;
         if (type0 == 1 && type1 == 1) // flip mirror edge on sheet 2
         {
           int e = Re;
           if (Re == -1)
             spdlog::info("Negative index");
-          if (!EdgeFlip(q, m, u, e, 1, delaunay_stats, Ptolemy))
+          if (!EdgeFlip(q, m, e, 1, delaunay_stats, Ptolemy))
             continue;
         }
         // checkR();
@@ -706,10 +480,10 @@ public:
     }
   }
 
-  static VectorX DescentDirection(const Eigen::SparseMatrix<Scalar>& hessian,
-                                  const VectorX& grad,
+  static VectorX DescentDirection(const Eigen::SparseMatrix<Scalar> &hessian,
+                                  const VectorX &grad,
                                   const std::vector<bool> &fixed_dof,
-                                  SolveStats<Scalar>& solve_stats)
+                                  SolveStats<Scalar> &solve_stats)
   {
 
     static Scalar a = 0.0; // Parameter for interpolating from the Newton direction to steepest descent
@@ -730,13 +504,13 @@ public:
     }
     for (int k = 0; k < grad_dof_fixed.size(); ++k)
     {
-        if (fixed_dof[k])
-        {
-            grad_dof_fixed[k] = 0;
-            hessian_dof_fixed.coeffRef(k, k) = 1;
-        }
+      if (fixed_dof[k])
+      {
+        grad_dof_fixed[k] = 0;
+        hessian_dof_fixed.coeffRef(k, k) = 1;
+      }
     }
- 
+
     // Compute corrected descent direction
     while (true)
     {
@@ -745,30 +519,29 @@ public:
       {
         mat = hessian_dof_fixed; // Use newton step
       }
-      else 
-      {     
+      else
+      {
         // Create identity
         typedef Eigen::Triplet<Scalar> T;
         std::vector<T> tripletList;
         tripletList.reserve(grad.rows());
-        for(int i = 0; i < grad.rows(); ++i)
+        for (int i = 0; i < grad.rows(); ++i)
         {
-          tripletList.push_back(T(i,i,1));
+          tripletList.push_back(T(i, i, 1));
         }
         Eigen::SparseMatrix<Scalar> id(grad.rows(), grad.rows());
         id.setFromTriplets(tripletList.begin(), tripletList.end());
-        
+
         // Create matrix with correction
-        mat = hessian_dof_fixed + a*id;
+        mat = hessian_dof_fixed + a * id;
       }
-      
 
       std::clock_t solve_start;
       solve_start = std::clock();
       Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
       solver.compute(mat);
       VectorX d = -solver.solve(grad_dof_fixed);
-      solve_stats.solve_time = ( std::clock() - solve_start ) / (double) CLOCKS_PER_SEC;
+      solve_stats.solve_time = (std::clock() - solve_start) / (double)CLOCKS_PER_SEC;
       Scalar newton_decr = d.dot(grad_dof_fixed);
       if (solver.info() == Eigen::Success && newton_decr < 0)
       {
@@ -803,26 +576,29 @@ public:
    * @param stats_params, statistics parameters, for details check the struct definitions on the top
    * @return VectorX, updated per-vertex scale factor along descent direction.
    */
-  static VectorX LineSearchNewtonDecr(Mesh<Scalar>& m, const VectorX& u0, const VectorX& d0, Scalar& lambda, VectorX& currentg, bool& bound_norm, DelaunayStats& delaunay_stats, SolveStats<Scalar>& solve_stats, const AlgorithmParameters& alg_params, const LineSearchParameters& ls_params, const StatsParameters& stats_params){
-    
+  static VectorX LineSearchNewtonDecr(Mesh<Scalar> &m, const VectorX &u0, const VectorX &d0, Scalar &lambda, VectorX &currentg, bool &bound_norm, DelaunayStats &delaunay_stats, SolveStats<Scalar> &solve_stats, const AlgorithmParameters &alg_params, const LineSearchParameters &ls_params, const StatsParameters &stats_params)
+  {
+
     Mesh<Scalar> &mc = m.cmesh();
     auto d = d0;
     auto u = u0;
     auto newton_decr = d.dot(currentg);
 
     // Scale the search direction vector by lambda
-    d *= lambda;  
+    d *= lambda;
 
     // To avoid nans/infs
-    if(ls_params.do_reduction){
-      while(d.maxCoeff() - d.minCoeff() > 10)
+    if (ls_params.do_reduction)
+    {
+      while (d.maxCoeff() - d.minCoeff() > 10)
       {
         d /= 2;
-        lambda /=2;
+        lambda /= 2;
       }
     }
 
-    Scalar init_e = 0.0; VectorX init_g = currentg;
+    Scalar init_e = 0.0;
+    VectorX init_g = currentg;
     Scalar l2_g0_sq = currentg.dot(currentg);
     VectorX alpha, cot_alpha;
 
@@ -834,8 +610,8 @@ public:
 
     int count = 0;
     Gradient(mc, alpha, currentg, solve_stats); // Current gradient value
-    Scalar l2_g_sq = currentg.dot(currentg); // Squared norm of the gradient
-    Scalar proj_grad = d.dot(currentg);  // Projected gradient
+    Scalar l2_g_sq = currentg.dot(currentg);    // Squared norm of the gradient
+    Scalar proj_grad = d.dot(currentg);         // Projected gradient
     while ((proj_grad > 0) || (l2_g_sq > l2_g0_sq && bound_norm))
     {
       // Backtrack one step
@@ -848,9 +624,7 @@ public:
       Gradient(mc, alpha, currentg, solve_stats); // update gradient
 
       // Line search condition to ensure quadratic convergence
-      if (   (count == 0)
-          && ((l2_g_sq <= l2_g0_sq) || (!bound_norm))
-          && (0.5 * (d.dot(currentg) + proj_grad) <= 0.1 * newton_decr))
+      if ((count == 0) && ((l2_g_sq <= l2_g0_sq) || (!bound_norm)) && (0.5 * (d.dot(currentg) + proj_grad) <= 0.1 * newton_decr))
       {
         u += d; // Use full line step
         lambda *= 2;
@@ -875,7 +649,7 @@ public:
       }
 
       // Check if lambda is below the termination threshold
-      if (lambda < alg_params.min_lambda) 
+      if (lambda < alg_params.min_lambda)
         break;
     }
     spdlog::debug("Used lambda {} ", lambda);
@@ -897,37 +671,41 @@ public:
    * @param stats_params, statistics parameters, for details check the struct definitions on the top
    * @return VectorX, updated per-vertex scale factor along descent direction.
    */
-  static VectorX LineSearchCETMEnergy(Mesh<Scalar>& m, const VectorX& u0, const VectorX& d0, Scalar& lambda, VectorX& currentg, bool& bound_norm, DelaunayStats& delaunay_stats, SolveStats<Scalar>& solve_stats, const AlgorithmParameters& alg_params, const LineSearchParameters& ls_params, const StatsParameters& stats_params){
-    
+  static VectorX LineSearchCETMEnergy(Mesh<Scalar> &m, const VectorX &u0, const VectorX &d0, Scalar &lambda, VectorX &currentg, bool &bound_norm, DelaunayStats &delaunay_stats, SolveStats<Scalar> &solve_stats, const AlgorithmParameters &alg_params, const LineSearchParameters &ls_params, const StatsParameters &stats_params)
+  {
+
     Mesh<Scalar> &mc = m.cmesh();
     auto d = d0;
     auto u = u0;
     auto newton_decr = d.dot(currentg);
 
     // Scale the search direction vector by lambda
-    d *= lambda;  
+    d *= lambda;
 
     // To avoid nans/infs
-    if(ls_params.do_reduction){
-      while(d.maxCoeff() - d.minCoeff() > 10)
+    if (ls_params.do_reduction)
+    {
+      while (d.maxCoeff() - d.minCoeff() > 10)
       {
         d /= 2;
-        lambda /=2;
+        lambda /= 2;
       }
     }
 
-    Scalar init_e = 0.0; VectorX init_g = currentg;
+    Scalar init_e = 0.0;
+    VectorX init_g = currentg;
     Scalar l2_g0_sq = currentg.dot(currentg);
     VectorX alpha, cot_alpha;
     ComputeAngles(mc, u, alpha, cot_alpha);
-    
-    if(ls_params.energy_samples){
+
+    if (ls_params.energy_samples)
+    {
       DelaunayStats d_stats_placeholder;
       SolveStats<Scalar> s_stats_placeholder;
-      SampleEnergyAlongDirection(mc, u, stats_params.output_dir+"/"+"energy_sample.csv", d, 2.0, 200, d_stats_placeholder, s_stats_placeholder, true);
-      SampleNewtonDecrement(mc, u, stats_params.output_dir+"/"+"newton_decrement.csv", d, 0.0, 2.0, 200, d_stats_placeholder, s_stats_placeholder);
+      SampleEnergyAlongDirection(mc, u, stats_params.output_dir + "/" + "energy_sample.csv", d, 2.0, 200, d_stats_placeholder, s_stats_placeholder, true);
+      SampleNewtonDecrement(mc, u, stats_params.output_dir + "/" + "newton_decrement.csv", d, 0.0, 2.0, 200, d_stats_placeholder, s_stats_placeholder);
     }
-    
+
     // init energy before line search start
     init_e = ConformalEquivalenceEnergy(mc, alpha, u);
 
@@ -940,12 +718,13 @@ public:
     Gradient(mc, alpha, currentg, solve_stats); // Current gradient value
     Scalar new_e = ConformalEquivalenceEnergy(mc, alpha, u);
     bool armijo_cond = false, curvature_cond = false;
-    do{
-      
+    do
+    {
+
       armijo_cond = new_e <= (init_e + ls_params.c1 * lambda * init_g.dot(d));
       curvature_cond = currentg.dot(d) >= ls_params.c2 * init_g.dot(d);
-      
-      if((bound_norm) && (lambda <= ls_params.bound_norm_thres))
+
+      if ((bound_norm) && (lambda <= ls_params.bound_norm_thres))
       {
         bound_norm = false;
         spdlog::debug("Dropping norm bound.");
@@ -953,19 +732,19 @@ public:
       if (lambda < alg_params.min_lambda)
         break;
 
-      if(new_e < init_e && armijo_cond && curvature_cond)
+      if (new_e < init_e && armijo_cond && curvature_cond)
         break;
-      
+
       d /= 2;
       lambda /= 2; // record backtrack changes in lambda
-      u -= d; // Backtrack
+      u -= d;      // Backtrack
       if (alg_params.use_edge_flips)
         MakeDelaunay(m, u, delaunay_stats, solve_stats);
       ComputeAngles(mc, u, alpha, cot_alpha);
       Gradient(mc, alpha, currentg, solve_stats);
       new_e = ConformalEquivalenceEnergy(mc, alpha, u);
 
-    }while(true);
+    } while (true);
 
     solve_stats.cetm_energy = new_e;
 
@@ -975,7 +754,7 @@ public:
 
   /**
    * The top-level conformal-hyperblic-delaunay algorithm
-   * 
+   *
    * @param m Mesh data structure
    * @param u0 vector of Scalar size equal to number of vertices of mesh, the initial values of per-vertex logarithmic scale factors
    * @param pt_fids list of face ids per sample point on the original mesh surface, will be updated through out the whole algorithm
@@ -985,20 +764,35 @@ public:
    * @param stats_params, statistics parameters, for details check the struct definitions on the top
    * @return flip sequence
    */
-  static std::tuple<VectorX, std::vector<int>, SolveStats<Scalar>> FindConformalMetric(OverlayMesh<Scalar>& m, const VectorX& u0, std::vector<int>& pt_fids, std::vector<Eigen::Matrix<Scalar, 3, 1>>& pt_bcs, const AlgorithmParameters& alg_params, const LineSearchParameters& ls_params, const StatsParameters& stats_params)
+  static std::tuple<VectorX, std::vector<int>, SolveStats<Scalar>> FindConformalMetric(OverlayMesh<Scalar> &m, const VectorX &u0, std::vector<int> &pt_fids, std::vector<Eigen::Matrix<Scalar, 3, 1>> &pt_bcs, const AlgorithmParameters &alg_params, const LineSearchParameters &ls_params, const StatsParameters &stats_params)
   {
-    switch (stats_params.log_level){
-      case 0: spdlog::set_level(spdlog::level::trace);    break;
-      case 1: spdlog::set_level(spdlog::level::debug);    break;
-      case 2: spdlog::set_level(spdlog::level::info);     break;
-      case 3: spdlog::set_level(spdlog::level::warn);     break;
-      case 4: spdlog::set_level(spdlog::level::err);      break;
-      case 5: spdlog::set_level(spdlog::level::critical); break;
-      default:
-      case 6: spdlog::set_level(spdlog::level::off);      break;
+    switch (stats_params.log_level)
+    {
+    case 0:
+      spdlog::set_level(spdlog::level::trace);
+      break;
+    case 1:
+      spdlog::set_level(spdlog::level::debug);
+      break;
+    case 2:
+      spdlog::set_level(spdlog::level::info);
+      break;
+    case 3:
+      spdlog::set_level(spdlog::level::warn);
+      break;
+    case 4:
+      spdlog::set_level(spdlog::level::err);
+      break;
+    case 5:
+      spdlog::set_level(spdlog::level::critical);
+      break;
+    default:
+    case 6:
+      spdlog::set_level(spdlog::level::off);
+      break;
     }
     m.bypass_overlay = alg_params.bypass_overlay;
-    Mesh<Scalar>& mc = m.cmesh(); 
+    Mesh<Scalar> &mc = m.cmesh();
     mc.init_pts(pt_fids, pt_bcs);
 
     DelaunayStats delaunay_stats;
@@ -1035,25 +829,29 @@ public:
     }
 
     bool bound_norm = (ls_params.lambda0 > ls_params.bound_norm_thres); // prevents the grad norm from increasing
-    if(bound_norm) spdlog::debug("Using norm bound.");
-    
+    if (bound_norm)
+      spdlog::debug("Using norm bound.");
+
     double max_curr = 0.0;
     Scalar pi;
 #ifdef WITH_MPFR
     if (std::is_same<Scalar, mpfr::mpreal>::value)
-        pi = Scalar(mpfr::const_pi());
+      pi = Scalar(mpfr::const_pi());
     else
-        pi = Scalar(M_PI);
+      pi = Scalar(M_PI);
 #else
     pi = Scalar(M_PI);
 #endif
-    if (stats_params.flip_count){
+    if (stats_params.flip_count)
+    {
       // need to also collect max boundary curvature error
-      for(int i = 0; i < mc.R.size(); i++){
-        if(mc.R[i] == mc.opp[i]){
+      for (int i = 0; i < mc.R.size(); i++)
+      {
+        if (mc.R[i] == mc.opp[i])
+        {
           int v0 = mc.v_rep[mc.to[i]];
-          if(max_curr < std::abs(double(mc.Th_hat[v0])/2-M_PI))
-            max_curr = std::abs(double(mc.Th_hat[v0])/2-M_PI);
+          if (max_curr < std::abs(double(mc.Th_hat[v0]) / 2 - M_PI))
+            max_curr = std::abs(double(mc.Th_hat[v0]) / 2 - M_PI);
         }
       }
     }
@@ -1061,7 +859,8 @@ public:
     Scalar lambda = ls_params.lambda0;
 
     // Optionally use Euclidean flips instead of Ptolemy flips for the initial MakeDelaunay
-    if ((!alg_params.initial_ptolemy) && (alg_params.use_edge_flips)) {
+    if ((!alg_params.initial_ptolemy) && (alg_params.use_edge_flips))
+    {
       MakeDelaunay(m, u, delaunay_stats, solve_stats, false);
       spdlog::debug("Finish first delaunay non_ptolemy");
       m.garbage_collection();
@@ -1070,26 +869,31 @@ public:
 
     // step1 apply per triangle the bc map to unit equilateral triangle
     original_to_equilateral(mc.pts, mc.pt_in_f, mc.n, mc.h, mc.l);
-    if ((alg_params.initial_ptolemy) && (alg_params.use_edge_flips)) {
+    if ((alg_params.initial_ptolemy) && (alg_params.use_edge_flips))
+    {
       MakeDelaunay(m, u, delaunay_stats, solve_stats, true);
       spdlog::debug("Finish first delaunay ptolemy");
-    } 
+    }
     ComputeAngles(mc, u, alpha, cot_alpha);
     std::ofstream mf, nf;
-    if(stats_params.error_log){
-      auto fname = stats_params.output_dir+"/conformal_iteration_error.csv";
-      std::fstream pf; pf.open(fname, std::ios_base::in);
+    if (stats_params.error_log)
+    {
+      auto fname = stats_params.output_dir + "/conformal_iteration_error.csv";
+      std::fstream pf;
+      pf.open(fname, std::ios_base::in);
       mf.open(fname, std::ios_base::app);
-      
-      if(!(pf.peek() != std::ifstream::traits_type::eof()))
+
+      if (!(pf.peek() != std::ifstream::traits_type::eof()))
         mf << "itr, max error, min_u, max_u, lambda, newton_dec, do_reduction, cetm_e\n";
     }
-    if(stats_params.flip_count){
-      auto fname = stats_params.output_dir+"/conformal_iteration_times.csv";
-      std::fstream pf; pf.open(fname, std::ios_base::in);
+    if (stats_params.flip_count)
+    {
+      auto fname = stats_params.output_dir + "/conformal_iteration_times.csv";
+      std::fstream pf;
+      pf.open(fname, std::ios_base::in);
       nf.open(fname, std::ios_base::app);
-      
-      if(!(pf.peek() != std::ifstream::traits_type::eof()))
+
+      if (!(pf.peek() != std::ifstream::traits_type::eof()))
         nf << "n_flips, solve_time, time\n";
     }
 
@@ -1103,15 +907,17 @@ public:
       Hessian(mc, cot_alpha, hessian);
       VectorX d = DescentDirection(hessian, currentg, mc.fixed_dof, solve_stats);
 
-      // Terminate if newton decrement sufficiently smalll      
+      // Terminate if newton decrement sufficiently smalll
       Scalar newton_decr = d.dot(currentg);
 
-      if(stats_params.error_log){
+      if (stats_params.error_log)
+      {
         solve_stats.cetm_energy = ConformalEquivalenceEnergy(mc, alpha, u);
-        mf << solve_stats.n_solves << "," << std::setprecision(17) << currentg.cwiseAbs().maxCoeff() << "," <<u.minCoeff() << "," << u.maxCoeff() << "," << lambda << "," << newton_decr << "," << ls_params.do_reduction <<" , "<<solve_stats.cetm_energy<< std::endl;
+        mf << solve_stats.n_solves << "," << std::setprecision(17) << currentg.cwiseAbs().maxCoeff() << "," << u.minCoeff() << "," << u.maxCoeff() << "," << lambda << "," << newton_decr << "," << ls_params.do_reduction << " , " << solve_stats.cetm_energy << std::endl;
       }
-      if(stats_params.flip_count){
-        auto diff_time = ( std::clock() - prev_time ) / (double) CLOCKS_PER_SEC;
+      if (stats_params.flip_count)
+      {
+        auto diff_time = (std::clock() - prev_time) / (double)CLOCKS_PER_SEC;
         nf << delaunay_stats.n_flips << ", " << solve_stats.solve_time << ", " << diff_time << std::endl;
       }
       // Alternative termination conditons to error threshold
@@ -1121,17 +927,17 @@ public:
         break;
       if (newton_decr > alg_params.newton_decr_thres)
         break;
-      
+
       // Determine initial lambda for line search based on method parameters
       if (ls_params.energy_cond || ls_params.reset_lambda)
       {
-        lambda = ls_params.lambda0; 
+        lambda = ls_params.lambda0;
       }
       else
       {
         lambda = std::min<Scalar>(1, 2 * lambda); // adaptive step length
       }
-      
+
       // reset lambda when it goes above norm bound threshold
       if ((lambda > ls_params.bound_norm_thres) && (!bound_norm))
       {
@@ -1139,41 +945,44 @@ public:
         lambda = ls_params.lambda0;
         spdlog::debug("Using norm bound.");
       }
-      if(ls_params.energy_cond)
+      if (ls_params.energy_cond)
         u = LineSearchCETMEnergy(m, u, d, lambda, currentg, bound_norm, delaunay_stats, solve_stats, alg_params, ls_params, stats_params);
       else
         u = LineSearchNewtonDecr(m, u, d, lambda, currentg, bound_norm, delaunay_stats, solve_stats, alg_params, ls_params, stats_params);
 
       // Display current iteration information
-      if(ls_params.energy_cond)
+      if (ls_params.energy_cond)
         spdlog::debug("itr({}) lm({}) flips({}) newton_decr({}) max_error({}), cetm_e({}))", solve_stats.n_solves, lambda, delaunay_stats.n_flips, newton_decr, currentg.cwiseAbs().maxCoeff(), solve_stats.cetm_energy);
       else
         spdlog::debug("itr({}) lm({}) flips({}) newton_decr({}) max_error({}))", solve_stats.n_solves, lambda, delaunay_stats.n_flips, newton_decr, currentg.cwiseAbs().maxCoeff());
 
       ComputeAngles(mc, u, alpha, cot_alpha);
-
     }
 
     // Output flip stats
-    if(stats_params.error_log) mf.close();
-    if(stats_params.flip_count) nf.close();
-    auto total_time = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-    if(stats_params.flip_count){
-      auto fname = stats_params.output_dir+"/flips_stats.csv";
+    if (stats_params.error_log)
+      mf.close();
+    if (stats_params.flip_count)
+      nf.close();
+    auto total_time = (std::clock() - start) / (double)CLOCKS_PER_SEC;
+    if (stats_params.flip_count)
+    {
+      auto fname = stats_params.output_dir + "/flips_stats.csv";
       auto header = "name, flips12, flipsq, flipss,flipst, n_flips, fac, time";
       std::stringstream ss;
-      ss << stats_params.name << ", " << delaunay_stats.n_flips_12 << ", " << delaunay_stats.n_flips_q << ", " << delaunay_stats.n_flips_s << ", " << delaunay_stats.n_flips_t << ", " << delaunay_stats.n_flips  << ", " << max_curr/pi <<", "<< total_time;
+      ss << stats_params.name << ", " << delaunay_stats.n_flips_12 << ", " << delaunay_stats.n_flips_q << ", " << delaunay_stats.n_flips_s << ", " << delaunay_stats.n_flips_t << ", " << delaunay_stats.n_flips << ", " << max_curr / pi << ", " << total_time;
       std::vector<std::string> content = {ss.str()};
       WriteLog(fname, content, header, true);
     }
 
-    if(stats_params.print_summary){
-      auto fname = stats_params.output_dir+"/summary_delaunay.csv";
+    if (stats_params.print_summary)
+    {
+      auto fname = stats_params.output_dir + "/summary_delaunay.csv";
       auto header = "name, n_flips, max_error, min_u, max_u, time";
       VectorX currentg;
       Gradient(mc, alpha, currentg, solve_stats);
       std::stringstream ss;
-      ss << stats_params.name << ", " <<delaunay_stats.n_flips << "," << currentg.cwiseAbs().maxCoeff()  << ", " << u.minCoeff() << "," << u.maxCoeff() << "," << total_time;
+      ss << stats_params.name << ", " << delaunay_stats.n_flips << "," << currentg.cwiseAbs().maxCoeff() << ", " << u.minCoeff() << "," << u.maxCoeff() << "," << total_time;
       std::vector<std::string> content = {ss.str()};
       WriteLog(fname, content, header, true);
     }
@@ -1181,7 +990,7 @@ public:
     // FIXME
     Gradient(mc, alpha, currentg, solve_stats);
     std::stringstream ss;
-    //std::cout << "Error: " << currentg.cwiseAbs().maxCoeff()  << std::endl;
+    // std::cout << "Error: " << currentg.cwiseAbs().maxCoeff()  << std::endl;
 
     // map barycentric coordinates from equilateral to scaled triangle
     equilateral_to_scaled(mc.pts, mc.pt_in_f, mc.n, mc.h, mc.to, mc.l, u);
@@ -1195,16 +1004,15 @@ public:
     }
 
     return std::make_tuple(u, delaunay_stats.flip_seq, solve_stats);
-
   }
 
-   /**
+  /**
    * Get the Reverse Map of the FindConformalMetric using the Halfedge-Flip Sequence
    * @param m_o OverlayMesh computed from FindConformalMetric
    * @param flip_seq Flip_ccw Sequence used in FindConformalMetric
    * @return Reverse Overlaymesh m_o_rev and vertices-id map between m_o_rev and m_o
    */
-  static std::tuple<OverlayMesh<Scalar>, std::vector<int>> GetReverseMap(OverlayMesh<Scalar> & m_o, const std::vector<int> &flip_seq)
+  static std::tuple<OverlayMesh<Scalar>, std::vector<int>> GetReverseMap(OverlayMesh<Scalar> &m_o, const std::vector<int> &flip_seq)
   {
     // Copy the final mesh with a clean overlay
     auto mc = m_o.cmesh();
@@ -1215,7 +1023,8 @@ public:
     m_o.garbage_collection();
     spdlog::debug("#m_o.out: {}, #m_o_rev.out: {}", m_o.out.size(), m_o_rev.out.size());
     spdlog::debug("#m_o.n: {}, #m_o_rev.n: {}", m_o.n.size(), m_o_rev.n.size());
-    if(m_o_rev.bypass_overlay){
+    if (m_o_rev.bypass_overlay)
+    {
       m_o.bypass_overlay = true;
       return std::make_tuple(m_o_rev, std::vector<int>());
     }
@@ -1226,12 +1035,12 @@ public:
     return std::make_tuple(m_o_rev, v_map);
   }
 
-   /**
+  /**
    * Reverse flips in a mesh using the Halfedge-Flip Sequence
    * @param m_o_rev OverlayMesh computed from FindConformalMetric to reverse
    * @param flip_seq Flip_ccw Sequence used in FindConformalMetric
    */
-  static void ReverseFlips(OverlayMesh<Scalar> & m_o_rev, const std::vector<int> &flip_seq)
+  static void ReverseFlips(OverlayMesh<Scalar> &m_o_rev, const std::vector<int> &flip_seq)
   {
     bool do_Ptolemy = true;
     // do reverse flips
@@ -1243,7 +1052,7 @@ public:
         m_o_rev.garbage_collection();
         Eigen::Matrix<Scalar, -1, 1> u_0(m_o_rev.cmesh().out.size());
         u_0.setZero();
-        m_o_rev.bc_eq_to_scaled(m_o_rev.cmesh().n, m_o_rev.cmesh().to, m_o_rev.cmesh().l,u_0);
+        m_o_rev.bc_eq_to_scaled(m_o_rev.cmesh().n, m_o_rev.cmesh().to, m_o_rev.cmesh().l, u_0);
       }
       if (do_Ptolemy)
       {
@@ -1253,12 +1062,13 @@ public:
       }
       else
       {
-        m_o_rev.flip_ccw(-flip_seq[ii]-1, false);
-        m_o_rev.flip_ccw(-flip_seq[ii]-1, false);
-        m_o_rev.flip_ccw(-flip_seq[ii]-1, false);
+        m_o_rev.flip_ccw(-flip_seq[ii] - 1, false);
+        m_o_rev.flip_ccw(-flip_seq[ii] - 1, false);
+        m_o_rev.flip_ccw(-flip_seq[ii] - 1, false);
       }
     }
-    if(m_o_rev.bypass_overlay) return;
+    if (m_o_rev.bypass_overlay)
+      return;
     m_o_rev.garbage_collection();
 
     if (do_Ptolemy == false)
@@ -1267,13 +1077,13 @@ public:
     }
   }
 
-   /**
+  /**
    * Get vertices map between the overlay mesh and reversed mesh
    * @param m_o OverlayMesh computed from FindConformalMetric
    * @param m_o_rev reversed OverlayMesh computed from FindConformalMetric
    * @return vertices-id map between m_o_rev and m_o
    */
-  static std::vector<int> GetVertexMap(OverlayMesh<Scalar> & m_o, OverlayMesh<Scalar> & m_o_rev)
+  static std::vector<int> GetVertexMap(OverlayMesh<Scalar> &m_o, OverlayMesh<Scalar> &m_o_rev)
   {
     auto mc = m_o.cmesh();
 
@@ -1319,7 +1129,6 @@ public:
             {
               flag = true;
             }
-
           }
           else
           {
@@ -1333,8 +1142,9 @@ public:
             }
           }
         }
-        
-        if (flag) break;
+
+        if (flag)
+          break;
 
         h_out0_rev = m_o_rev.next_out(h_out0_rev);
         while_cnt++;
@@ -1353,14 +1163,14 @@ public:
       {
         int h_current = h_out;
         int h_current_rev = h_out_rev;
-        
+
         while (m_o.vertex_type[m_o.to[h_current]] != ORIGINAL_VERTEX)
         {
-          
+
           if (m_o_rev.vertex_type[m_o_rev.to[h_current_rev]] == ORIGINAL_VERTEX)
           {
             spdlog::error("out path not matching, case: {}", caseid);
-            break;  
+            break;
           }
           int v_current = m_o.to[h_current];
           int v_current_rev = m_o_rev.to[h_current_rev];
@@ -1378,9 +1188,8 @@ public:
         h_out = m_o.next_out(h_out);
         h_out_rev = m_o_rev.next_out(h_out_rev);
       } while (h_out != h_out0);
-      
     }
-    
+
     return v_map;
   }
 
@@ -1391,7 +1200,7 @@ public:
    * @param x 3d coordinat of the Original Mesh
    * @return interpolated OverlayMesh Coordinates
    */
-  static std::vector<std::vector<Scalar>> Interpolate_3d(OverlayMesh<Scalar> & m_o, const std::vector<int> &flip_seq, const std::vector<std::vector<Scalar>> &x, bool uniform = false)
+  static std::vector<std::vector<Scalar>> Interpolate_3d(OverlayMesh<Scalar> &m_o, const std::vector<int> &flip_seq, const std::vector<std::vector<Scalar>> &x, bool uniform = false)
   {
     std::vector<std::vector<Scalar>> z(3);
 
@@ -1404,7 +1213,8 @@ public:
       return z;
     }
     auto rev_map = GetReverseMap(m_o, flip_seq);
-    if(m_o.bypass_overlay) return std::vector<std::vector<Scalar>>();
+    if (m_o.bypass_overlay)
+      return std::vector<std::vector<Scalar>>();
     auto m_o_rev = std::get<0>(rev_map);
     auto v_map = std::get<1>(rev_map);
 
@@ -1427,14 +1237,14 @@ public:
         z[j][i] = z_rev[j][v_map[i]];
       }
     }
-    
+
     return z;
   }
 
   /**
-   * Start at any configuration that all scaled elements in mesh satisfies delaunay condition, evenly evaluate newton-decrement along 
+   * Start at any configuration that all scaled elements in mesh satisfies delaunay condition, evenly evaluate newton-decrement along
    * certain direction for a number of samples the series of sampled values will be written to file `fname`.
-   * 
+   *
    * @param m0 Mesh data structure
    * @param u0 vector of Scalar size equal to number of vertices of mesh, the initial values of per-vertex logarithmic scale factors
    * @param d0 vector of Scalar size eqaul to number of vertices of mesh, a delta vector on u0
@@ -1445,8 +1255,9 @@ public:
    * @param rescale Scale (and record) the lambda values by |d0| and the newton decr by 1/|d0|
    * @return void
    */
-  static void SampleNewtonDecrement(const Mesh<Scalar>& m0, const VectorX& u0, std::string fname, const VectorX &d, Scalar lambda_min, Scalar lambda_max, int n_sample, DelaunayStats& delaunay_stats, SolveStats<Scalar>& solve_stats, bool rescale=false){
-    
+  static void SampleNewtonDecrement(const Mesh<Scalar> &m0, const VectorX &u0, std::string fname, const VectorX &d, Scalar lambda_min, Scalar lambda_max, int n_sample, DelaunayStats &delaunay_stats, SolveStats<Scalar> &solve_stats, bool rescale = false)
+  {
+
     if (n_sample == 0)
       return;
 
@@ -1469,18 +1280,17 @@ public:
       std::stringstream ss;
       if (rescale)
       {
-          ss << std::setprecision(17) << sqrt(d.dot(d))*(lambda_min + i * step_size)
-             << "," << d.dot(g)/sqrt(d.dot(d));
+        ss << std::setprecision(17) << sqrt(d.dot(d)) * (lambda_min + i * step_size)
+           << "," << d.dot(g) / sqrt(d.dot(d));
       }
       else
       {
-          ss << std::to_string(i) << "," <<std::setprecision(17) << d.dot(g);
+        ss << std::to_string(i) << "," << std::setprecision(17) << d.dot(g);
       }
       newton_dec.push_back(ss.str());
     }
 
     WriteLog(fname, newton_dec, "itr, newton_decrement");
-
   }
   /**
    * @brief Overloaded version of sampleNewtonDecrement function above. Used for python binding. Unlike the above method, this method always computes and uses the Newton descent direction.
@@ -1491,14 +1301,15 @@ public:
    * @param n_samples Total number of evenly distributed sample points along d0
    * @return void
    */
-  static void SampleNewtonDecrementStl(Mesh<Scalar>& m0,
-                                       std::vector<Scalar>& u0_vec,
+  static void SampleNewtonDecrementStl(Mesh<Scalar> &m0,
+                                       std::vector<Scalar> &u0_vec,
                                        std::string fname,
                                        Scalar lambda_min,
                                        Scalar lambda_max,
-                                       int n_sample) {
-    VectorX u0(u0_vec.size()); 
-    for(int i = 0; i < u0_vec.size(); i++)
+                                       int n_sample)
+  {
+    VectorX u0(u0_vec.size());
+    for (int i = 0; i < u0_vec.size(); i++)
       u0(i) = u0_vec[i];
 
     // Create placeholder stat structures
@@ -1552,9 +1363,9 @@ public:
   }
 
   /**
-   * Start at any configuration that all scaled elements in mesh satisfies delaunay condition, evenly evaluate conformal-equivalence-energy along 
+   * Start at any configuration that all scaled elements in mesh satisfies delaunay condition, evenly evaluate conformal-equivalence-energy along
    * certain direction for a number of samples the series of sampled values will be written to file `fname`.
-   * 
+   *
    * @param m0 Mesh data structure
    * @param u0 vector of Scalar size equal to number of vertices of mesh, the initial values of per-vertex logarithmic scale factors
    * @param d0 vector of Scalar size eqaul to number of vertices of mesh, a delta vector on u0
@@ -1564,34 +1375,40 @@ public:
    * @param solve_stats struct collecting info for solvings through out the algorithm
    * @return void
    */
-  static void SampleEnergyAlongDirection(const Mesh<Scalar>& m0, const VectorX& u0, std::string fname, const VectorX &d, Scalar lambda_max, int n_sample, DelaunayStats& delaunay_stats, SolveStats<Scalar>& solve_stats, bool subtract_avg=false){
+  static void SampleEnergyAlongDirection(const Mesh<Scalar> &m0, const VectorX &u0, std::string fname, const VectorX &d, Scalar lambda_max, int n_sample, DelaunayStats &delaunay_stats, SolveStats<Scalar> &solve_stats, bool subtract_avg = false)
+  {
 
-    if (n_sample == 0) return;
+    if (n_sample == 0)
+      return;
 
     VectorX alpha, cot_alpha;
     Scalar step_size = lambda_max / n_sample;
     Scalar avg_e = 0.0;
-    auto m = m0; auto u = u0;
-    Eigen::Matrix<Scalar, Eigen::Dynamic, 1> E; E.setZero(n_sample);
-    for (int i = 0; i < n_sample; i++){
+    auto m = m0;
+    auto u = u0;
+    Eigen::Matrix<Scalar, Eigen::Dynamic, 1> E;
+    E.setZero(n_sample);
+    for (int i = 0; i < n_sample; i++)
+    {
       m = m0;
       u = u0 + i * step_size * d;
       MakeDelaunay(m, u, delaunay_stats, solve_stats);
       ComputeAngles(m, u, alpha, cot_alpha);
       E[i] = ConformalEquivalenceEnergy(m, alpha, u);
     }
-    if(subtract_avg) avg_e = E.sum() / n_sample;
-    
+    if (subtract_avg)
+      avg_e = E.sum() / n_sample;
+
     std::vector<std::string> e_samples;
-    for(int i = 0; i < E.size(); i++){
+    for (int i = 0; i < E.size(); i++)
+    {
       std::stringstream ss;
-      ss << std::to_string(i) << "," << std::setprecision(17) << E[i]-avg_e;
+      ss << std::to_string(i) << "," << std::setprecision(17) << E[i] - avg_e;
       e_samples.push_back(ss.str());
     }
 
-    std::fstream nf(fname,std::ios::in | std::ios::out);
+    std::fstream nf(fname, std::ios::in | std::ios::out);
     WriteLog(fname, e_samples, "itr, e-avg_e");
-
   }
 
   /**
@@ -1602,20 +1419,22 @@ public:
    * @param append, toggle between append (true) and out mode (false).
    * @return void
    */
-  static void WriteLog(std::string fname, std::vector<std::string>& v, std::string header="", bool append=false){
-    std::fstream mf, nf; nf.open(fname, std::ios_base::in);
-    if(append)
+  static void WriteLog(std::string fname, std::vector<std::string> &v, std::string header = "", bool append = false)
+  {
+    std::fstream mf, nf;
+    nf.open(fname, std::ios_base::in);
+    if (append)
       mf.open(fname, std::ios_base::app);
     else
       mf.open(fname, std::ios_base::out);
-    
-    if(!(append && nf.peek() != std::ifstream::traits_type::eof()))
+
+    if (!(append && nf.peek() != std::ifstream::traits_type::eof()))
       mf << header << "\n";
-    for(int i = 0; i < v.size(); i++){
+    for (int i = 0; i < v.size(); i++)
+    {
       mf << v[i] << "\n";
     }
     mf.close();
   }
-
 };
 #endif
