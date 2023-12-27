@@ -117,7 +117,7 @@ compute_layout(Mesh<Scalar> &m, const std::vector<Scalar> &u, std::vector<bool>&
   assert(m.f[h] != -1);
 
   phi[h] = xi[h];
-  _u[h] = m.l[m.e(h)] * exp((u[m.to[h]] + u[m.to[m.opp[h]]]) / 2);
+  _u[h] = m.l[h] * exp((u[m.to[h]] + u[m.to[m.opp[h]]]) / 2);
   _v[h] = 0.0;
   auto done = std::vector<bool>(m.n_faces(), false);
 
@@ -173,10 +173,10 @@ compute_layout(Mesh<Scalar> &m, const std::vector<Scalar> &u, std::vector<bool>&
     Eigen::Matrix<Scalar, 1, 2> p2;
     p2[0] = _u[h];
     p2[1] = _v[h];
-    assert(m.l[m.e(h)] != 0.0);
+    assert(m.l[h] != 0.0);
     Scalar l0 = Scalar(1.0);
-    Scalar l1 = exp((phi[hn] - phi[hp]) / 2) * (m.l[m.e(hn)] / m.l[m.e(h)]);
-    Scalar l2 = exp((phi[hn] - phi[h]) / 2) * (m.l[m.e(hp)] / m.l[m.e(h)]);
+    Scalar l1 = exp((phi[hn] - phi[hp]) / 2) * (m.l[hn] / m.l[h]);
+    Scalar l2 = exp((phi[hn] - phi[h]) / 2) * (m.l[hp] / m.l[h]);
     Eigen::Matrix<Scalar, 1, 2> pn = p1 + (p2 - p1) * (1 + square(l2 / l0) - square(l1 / l0)) / 2 + perp(p2 - p1) * 2 * area_from_len(1.0, l1 / l0, l2 / l0);
     _u[hn] = pn[0];
     _v[hn] = pn[1];
