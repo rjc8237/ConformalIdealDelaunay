@@ -4,13 +4,15 @@ project(ConformalIdealDelaunay)
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(DIR_EXT "${CMAKE_CURRENT_SOURCE_DIR}/ext")
 
-# enable CGAL if MPFR is needed
-option(LIBIGL_COPYLEFT_CGAL        "Use CGAL"           ON)
-option(LIBIGL_PREDICATES          "Use Predicates"     ON)
+if (PROJECT_IS_TOP_LEVEL)
+  # enable CGAL if MPFR is needed
+  option(LIBIGL_COPYLEFT_CGAL        "Use CGAL"           ON)
+  option(LIBIGL_PREDICATES          "Use Predicates"     ON)
 
-option(RENDER_TEXTURE             "Render results"     ON)
-# enable embree for speeding up texture rendering
-option(LIBIGL_EMBREE              "Use EMBREE"         ON)
+  option(RENDER_TEXTURE             "Render results"     ON)
+  # enable embree for speeding up texture rendering
+  option(LIBIGL_EMBREE              "Use EMBREE"         ON)
+endif() 
 
 if (RENDER_TEXTURE)
 
