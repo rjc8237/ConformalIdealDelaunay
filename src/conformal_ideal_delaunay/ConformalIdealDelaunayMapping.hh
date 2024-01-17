@@ -45,6 +45,10 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 
+#ifdef USE_SUITESPARSE
+#include <Eigen/CholmodSupport>
+#endif
+
 using namespace OverlayProblem;
 
 struct DelaunayStats
@@ -538,7 +542,12 @@ public:
 
       std::clock_t solve_start;
       solve_start = std::clock();
+
+#ifdef USE_SUITESPARSE
+      Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<Scalar>>  solver;
+#else
       Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
+#endif
       solver.compute(mat);
       VectorX d = -solver.solve(grad_dof_fixed);
       solve_stats.solve_time = (std::clock() - solve_start) / (double)CLOCKS_PER_SEC;
