@@ -12,6 +12,8 @@ if (PROJECT_IS_TOP_LEVEL)
   option(RENDER_TEXTURE             "Render results"     ON)
   # enable embree for speeding up texture rendering
   option(LIBIGL_EMBREE              "Use EMBREE"         ON)
+  option(USE_SUITESPARSE "Use suite sparse methods for matrix inversion" ON)
+  set ( SUITESPARSE_ENABLE_PROJECTS "suitesparse_config;cholmod;spqr" )
 endif() 
 
 if (RENDER_TEXTURE)
@@ -24,6 +26,10 @@ if (RENDER_TEXTURE)
   target_link_libraries(plot PUBLIC igl::core igl::glfw)
 
 endif() 
+
+if(USE_SUITESPARSE)
+  add_compile_definitions(USE_SUITESPARSE)
+endif()
 
 #set(LIBIGL_INCLUDE_DIR ${DIR_EXT}/libigl/include)
 #find_package(LIBIGL REQUIRED QUIET)
@@ -61,7 +67,6 @@ add_library(conformal_cpp SHARED
 target_include_directories(conformal_cpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_include_directories(conformal_cpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/util)
 
-
 # build pybind functions
 add_library(conformal_py MODULE
   src/conformal_ideal_delaunay/Halfedge.cc
@@ -72,6 +77,18 @@ add_library(conformal_py MODULE
 )
 target_include_directories(conformal_py PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_include_directories(conformal_py PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/util)
+
+if(USE_SUITESPARSE)
+  include(suitesparse)
+  target_link_libraries(conformal_py PRIVATE
+    SuiteSparse::SuiteSparseConfig
+    SuiteSparse::CHOLMOD
+  )
+  target_link_libraries(conformal_cpp PRIVATE
+    SuiteSparse::SuiteSparseConfig
+    SuiteSparse::CHOLMOD
+  )
+endif()
 
 if (RENDER_TEXTURE)
   add_compile_definitions(RENDER_TEXTURE)
