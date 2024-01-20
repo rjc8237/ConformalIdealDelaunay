@@ -137,9 +137,9 @@ void NOB_to_connectivity(const std::vector<int> &next_he,
                          const std::vector<int> &diag_he = std::vector<int>());
 /**
  * Creates a doubled mesh with reflectional symmetry map and corresponding labels froma   mesh connectivity with (possibly empty) boundary, specified by next_he, opp, bnd_loops
- * ASSUMES that the boundary loop halfedges are at the end of indices so boundary loops are at the end 
+ * ASSUMES that the boundary loop halfedges are at the end of indices so boundary loops are at the end
  * construct a mesh with double number of faces and glued to the original mesh along the boundary
- * @params: next_he, opp, bnd_loops 
+ * @params: next_he, opp, bnd_loops
  * @params: Connectivity and Reflection structures for the double mesh
  * @return: void
  */
@@ -153,7 +153,6 @@ void NOB_to_double(const std::vector<int> &next_he_in,
                    std::vector<int> &R,
                    std::vector<std::vector<int>> &corner_to_he,
                    std::vector<std::pair<int, int>> &he_to_corner);
-
 
 /**
  * Partition vertices in a doubled mesh with reflection map into independent and dependent

@@ -54,6 +54,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 #include "BarycenterMapping.hh"
+#include "Halfedge.hh"
 
 #ifdef WITH_MPFR
 #include <unsupported/Eigen/MPRealSupport>
@@ -1356,6 +1357,237 @@ namespace OverlayProblem
     FlipStats flip_stats;
     return EdgeFlip(m, e, tag, flip_seq, q, flip_stats, Ptolemy);
   }
+
+    /**
+   * Given the prescribed per-vertex angle sum, check how much the angles invalidate Gauss-Bonnet
+   * @param m Mesh data structure
+   * @return void
+   */
+template <typename Scalar>
+void GaussBonnetCheck(Mesh<Scalar>& m)
+{
+    Scalar pi;
+#ifdef WITH_MPFR
+    if (std::is_same<Scalar, mpfr::mpreal>::value)
+      pi = Scalar(mpfr::const_pi());
+    else
+      pi = Scalar(M_PI);
+#else
+      pi = Scalar(M_PI);
+#endif
+    int double_genus = 2 - (m.n_vertices() - m.n_edges() + m.n_faces());
+    Scalar targetsum = pi * (2 * m.n_vertices() - 2 * (2 - double_genus));
+    Scalar th_hat_sum = 0.0;
+    for(auto t: m.Th_hat)
+      th_hat_sum += t;
+    spdlog::info("Guass-Bonnet error of {}", th_hat_sum - targetsum);
+}
+
+  /**
+   * @brief Given a closed mesh, check the lengths of paired halfedges are consistent.
+   * 
+   * @param m, mesh to check
+   */
+  template <typename Scalar>
+  bool check_length_consistency(
+      const Mesh<Scalar> &m
+  ) {
+      for (size_t he = 0; he < m.n_halfedges(); ++he)
+      {
+          Scalar consistency_error = abs(m.l[he] - m.l[m.opp[he]]);
+          if (consistency_error > 1e-8)
+          {
+              spdlog::error("Consistency error of {}", consistency_error);
+              return false;
+          }
+      }
+
+      return true;
+  }
+
+  /**
+ * Convert triangle mesh in V, F format to halfedge structure.
+ *
+ * @param V dim #v*3 matrix, each row corresponds to mesh vertex coordinates
+ * @param F dim #f*3 matrix, each row corresponds to three vertex ids of each facet
+ * @param uv dim #v*2 matrix, each row corresponds to mesh vertex uv coordinate
+ * @param F_uv dim #f*3 matrix, each row corresponds to three uv vertex ids of each facet
+ * @param Theta_hat dim #v vector, each element is the prescribed angle sum at each vertex
+ * @param vtx_reindex, dim #v int-vector, stores the correspondence of new vertex id in mesh m to old index in V
+ * @param indep_vtx, int-vector, stores index of identified independent vertices in the original copy
+ * @param dep_vtx, int-vector, stores index of new added vertex copies of the double cover
+ * @param v_rep, dim #v int-vector, map independent vertices to unique indices and dependent vertices to their reflection's index
+ * @param free_cones, vertices to let angle vary freely
+ * @return m, Mesh data structure, for details check OverlayMesh.hh
+ */
+template <typename Scalar>
+static
+Mesh<Scalar>
+FV_to_double(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv,
+    const Eigen::MatrixXi& F_uv,
+    const std::vector<Scalar> &Theta_hat,
+    std::vector<int>& vtx_reindex,
+    std::vector<int>& indep_vtx,
+    std::vector<int>& dep_vtx,
+    std::vector<int>& v_rep,
+    std::vector<int>& bnd_loops,
+    std::vector<int> free_cones=std::vector<int>(),
+    bool fix_boundary=false
+){
+    Mesh<Scalar> m;
+
+    // Build the NOB representation from the input connectivity
+    std::vector<int> next_he;
+    std::vector<int> opp;
+    std::vector<std::vector<int>> corner_to_he;
+    std::vector<std::pair<int, int>> he_to_corner;
+    FV_to_NOB(F, next_he, opp, bnd_loops, vtx_reindex, corner_to_he, he_to_corner);
+
+    // Build the connectivity arrays from the NOB arrays
+    Connectivity C;
+    NOB_to_connectivity(next_he, opp, bnd_loops, C);
+
+    // Permute the target angles to match the new vertex indices of the halfedge mesh
+    std::vector<Scalar> Theta_hat_perm(Theta_hat.size());
+    for (int i = 0; i < Theta_hat_perm.size(); ++i)
+    {
+        Theta_hat_perm[i] = Theta_hat[vtx_reindex[i]];
+    }
+
+    // If there is no boundary, create a mesh with trivial reflection information
+    if (bnd_loops.size() == 0)
+    {
+        int n_v = C.out.size();
+        int n_he = C.n.size();
+
+        // Create trivial reflection information
+        std::vector<char> type(n_he, 0);
+        std::vector<int> R(n_he, 0);
+
+        // Build the edge length array from the vertex positions
+        std::vector<Scalar> l;
+        compute_l_from_uv<Scalar>(uv, F_uv, he_to_corner, l);
+
+        // Create a halfedge structure for the mesh
+        m.n = C.n;
+        m.to = C.to;
+        m.f = C.f;
+        m.h = C.h;
+        m.out = C.out;
+        m.opp = C.opp;
+        m.type = type;
+        m.type_input = type;
+        m.R = R;
+        m.l = l;
+        m.Th_hat = Theta_hat_perm;
+        m.v_rep = range(0, n_v);
+        m.fixed_dof = std::vector<bool>(n_v, false);
+
+        if (free_cones.empty())
+        {
+            m.fixed_dof[0] = true;
+        }
+    }
+    // If there is boundary, create a double tufted cover with a reflection map
+    else
+    {
+        // Create the doubled mesh connectivity information
+        Connectivity C_double;
+        std::vector<char> type;
+        std::vector<int> R;
+        std::vector<std::vector<int>> corner_to_he_double;
+        std::vector<std::pair<int, int>> he_to_corner_double;
+        NOB_to_double(
+            next_he,
+            opp,
+            bnd_loops,
+            corner_to_he,
+            he_to_corner,
+            C_double,
+            type,
+            R,
+            corner_to_he_double,
+            he_to_corner_double
+        );
+        find_indep_vertices(C_double.out, C_double.to, type, R, indep_vtx, dep_vtx, v_rep);
+        int n_v = C.out.size();
+        int n_v_double = C_double.out.size();
+
+        // Double the target angle array
+        std::vector<Scalar> Theta_hat_double(n_v);
+        for (int i = 0; i < n_v; ++i)
+        {
+            Theta_hat_double[i] = 2*Theta_hat_perm[C.to[C.opp[C_double.out[indep_vtx[i]]]]];
+        }
+
+        // Double the length array FIXME Only works for double tufted cover
+        std::vector<Scalar> l_double;
+        std::vector<int> vtx_reindex_double(n_v_double);
+        for (int i = 0; i < n_v_double; ++i)
+        {
+            vtx_reindex_double[i] = vtx_reindex[v_rep[i]];
+        }
+        compute_l_from_uv<Scalar>(uv, F_uv, he_to_corner_double, l_double);
+
+        // Create the halfedge structure for the doubled mesh
+        m.n = C_double.n;
+        m.to = C_double.to;
+        m.f = C_double.f;
+        m.h = C_double.h;
+        m.out = C_double.out;
+        m.opp = C_double.opp;
+        m.type = type;
+        m.type_input = type;
+        m.R = R;
+        m.l = l_double;
+        m.Th_hat = Theta_hat_double;
+        m.v_rep = v_rep;
+
+        // Set the fixed_dof to the first boundary halfedge for symmetric meshes
+        // If fixing boundary, fix all boundary halfedges
+        m.fixed_dof = std::vector<bool>(n_v, false);
+        for (int i = 0; i < n_v_double; ++i)
+        {
+            if (m.to[m.R[m.out[i]]] == i)
+            {
+                m.fixed_dof[m.v_rep[i]] = true;
+                if (!fix_boundary) break;
+            }
+        }
+
+    }
+
+    // Get the inverse permutation
+    std::vector<int> vtx_reindex_inverse(vtx_reindex.size());
+    for (int i = 0; i < vtx_reindex.size(); ++i)
+    {
+        vtx_reindex_inverse[vtx_reindex[i]] = i;
+    }
+
+    // Also fix all cones explicitly given as fixed
+    for (size_t i = 0; i < free_cones.size(); ++i)
+    {
+        // Get cone after reindexing
+        int vi = free_cones[i];
+        int permuted_vi = vtx_reindex_inverse[vi];
+
+        // Set cone as fixed dof
+        m.fixed_dof[permuted_vi] = true;
+    }
+
+    // Check for consistency of lengths
+    if (!check_length_consistency(m))
+    {
+        spdlog::warn("Lengths of input mesh metric are not consistent across edges");
+    }
+
+    // Check Gauss-Bonnet error
+    GaussBonnetCheck(m);
+    return m;
+}
 
 }
 
