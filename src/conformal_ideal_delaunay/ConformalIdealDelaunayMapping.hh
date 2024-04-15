@@ -407,7 +407,7 @@ public:
         q.push_back(i);
     }
     // Add maximum number of flips for degenerate case
-    int max_flips = 10 * mc.n_edges();
+    int max_flips = 100 * mc.n_edges();
     while ((!q.empty()) && (delaunay_stats.n_flips < max_flips))
     {
       int e = q.front();
@@ -428,10 +428,6 @@ public:
             spdlog::info("Negative index");
           if (!EdgeFlip(q, m, e, 1, delaunay_stats, Ptolemy))
             continue;
-        }
-        if ((delaunay_stats.n_flips % 10000) == 0)
-        {
-          spdlog::info("{} flips, {} checks, {} in queue", delaunay_stats.n_flips, solve_stats.n_checks, q.size());
         }
         // checkR();
       }
