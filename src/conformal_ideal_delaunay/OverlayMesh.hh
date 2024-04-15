@@ -46,7 +46,7 @@
 #ifndef OVERLAY_MESH_HH
 #define OVERLAY_MESH_HH
 
-#include <set>
+#include <deque>
 #include <vector>
 #include <map>
 #include <stdlib.h>
@@ -1101,7 +1101,7 @@ namespace OverlayProblem
   };
 
   template <typename Scalar>
-  bool EdgeFlip(Mesh<Scalar> &m, int e, int tag, std::vector<int> &flip_seq, std::set<int> &q, FlipStats &flip_stats, bool Ptolemy = true)
+  bool EdgeFlip(Mesh<Scalar> &m, int e, int tag, std::vector<int> &flip_seq, std::deque<int> &q, FlipStats &flip_stats, bool Ptolemy = true)
   {
     Mesh<Scalar> &mc = m.cmesh();
 
@@ -1113,10 +1113,10 @@ namespace OverlayProblem
     int hmj = mc.n[him];
 
     // Add edges of the boundary of the triangle flap to the set q
-    q.insert(mc.h0(hjk));
-    q.insert(mc.h0(hki));
-    q.insert(mc.h0(him));
-    q.insert(mc.h0(hmj));
+    q.push_back(mc.h0(hjk));
+    q.push_back(mc.h0(hki));
+    q.push_back(mc.h0(him));
+    q.push_back(mc.h0(hmj));
 
     std::vector<char> &type = mc.type;
 
@@ -1328,12 +1328,6 @@ namespace OverlayProblem
       }
     } // to make it cw on side 2
 
-    // Add edges of the boundary of the triangle flap to the set q
-    q.insert(mc.h0(hjk));
-    q.insert(mc.h0(hki));
-    q.insert(mc.h0(him));
-    q.insert(mc.h0(hmj));
-
     for (int i = 0; i < to_flip.size(); i++)
     {
       if (to_flip[i] == 1)
@@ -1353,7 +1347,7 @@ namespace OverlayProblem
   bool EdgeFlip(Mesh<Scalar> &m, int e, int tag, bool Ptolemy = true)
   {
     std::vector<int> flip_seq;
-    std::set<int> q;
+    std::deque<int> q;
     FlipStats flip_stats;
     return EdgeFlip(m, e, tag, flip_seq, q, flip_stats, Ptolemy);
   }
