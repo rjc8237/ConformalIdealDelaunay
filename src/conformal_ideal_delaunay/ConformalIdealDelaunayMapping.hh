@@ -33,7 +33,7 @@
 #ifndef CONFORMAL_IDEAL_DELAUNAY_MAPPING_HH
 #define CONFORMAL_IDEAL_DELAUNAY_MAPPING_HH
 
-#include <deque>
+#include <set>
 #include <iomanip>
 #include <fstream>
 #include <ctime>
@@ -366,12 +366,12 @@ public:
    *
    * @param m, mesh data structure
    * @param e, int, halfedge id
-   * @param q, deque<int>, set of possible non-Delaunay halfedges
+   * @param q, set<int>, set of possible non-Delaunay halfedges
    * @param delaunay_stats struct collecting info for delaunay flips through out the algorithm
    * @param Ptolemy, bool, when true the edge length is updated via ptolemy formula, otherwise using law of cosine.
    * @return bool, true indicates flip succeeds.
    */
-  static bool EdgeFlip(std::deque<int> &q, Mesh<Scalar> &m, int e, int tag, DelaunayStats &delaunay_stats, bool Ptolemy = true)
+  static bool EdgeFlip(std::set<int> &q, Mesh<Scalar> &m, int e, int tag, DelaunayStats &delaunay_stats, bool Ptolemy = true)
   {
     FlipStats flip_stats;
     bool success = ::EdgeFlip<Scalar>(m, e, tag, delaunay_stats.flip_seq, q, flip_stats, Ptolemy);
@@ -396,7 +396,7 @@ public:
   static void MakeDelaunay(Mesh<Scalar> &m, const VectorX &u, DelaunayStats &delaunay_stats, SolveStats<Scalar> &solve_stats, bool Ptolemy = true)
   {
     Mesh<Scalar> &mc = m.cmesh();
-    std::deque<int> q;
+    std::set<int> q;
     for (int i = 0; i < mc.n_halfedges(); i++)
     {
       if (mc.opp[i] < i) // Only consider halfedges with lower index to prevent duplication
@@ -404,14 +404,12 @@ public:
       int type0 = mc.type[mc.h0(i)];
       int type1 = mc.type[mc.h1(i)];
       if (type0 == 0 || type0 == 1 || type1 == 1 || type0 == 3) // type 22 edges are flipped below; type 44 edges (virtual diagonals) are never flipped.
-        q.push_back(i);
+        q.insert(i);
     }
-    // Add maximum number of flips for degenerate case
-    int max_flips = 10 * mc.n_edges();
-    while ((!q.empty()) && (delaunay_stats.n_flips < max_flips))
+    while (!q.empty())
     {
-      int e = q.front();
-      q.pop_front();
+      int e = *(q.begin());
+      q.erase(q.begin());
       int type0 = mc.type[mc.h0(e)];
       int type1 = mc.type[mc.h1(e)];
       if (!(type0 == 2 && type1 == 2) && !(type0 == 4) && NonDelaunay(mc, u, e, solve_stats))
@@ -429,18 +427,8 @@ public:
           if (!EdgeFlip(q, m, e, 1, delaunay_stats, Ptolemy))
             continue;
         }
-        if ((delaunay_stats.n_flips % 10000) == 0)
-        {
-          spdlog::info("{} flips, {} checks, {} in queue", delaunay_stats.n_flips, solve_stats.n_checks, q.size());
-        }
         // checkR();
       }
-    }
-
-    // Send warning if maximum flips occurred
-    if (delaunay_stats.n_flips >= max_flips)
-    {
-      spdlog::warn("Maximum number of flips reached: stopping MakeDelaunay early");
     }
   }
 
