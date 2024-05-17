@@ -85,7 +85,7 @@ if(USE_SUITESPARSE)
     SuiteSparse::SuiteSparseConfig
     SuiteSparse::CHOLMOD
   )
-  target_link_libraries(conformal_cpp PRIVATE
+  target_link_libraries(conformal_cpp PUBLIC
     SuiteSparse::SuiteSparseConfig
     SuiteSparse::CHOLMOD
   )
