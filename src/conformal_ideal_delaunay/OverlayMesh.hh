@@ -1374,7 +1374,7 @@ void GaussBonnetCheck(Mesh<Scalar>& m)
     Scalar th_hat_sum = 0.0;
     for(auto t: m.Th_hat)
       th_hat_sum += t;
-    spdlog::debug("Guass-Bonnet error of {}", th_hat_sum - targetsum);
+    spdlog::info("Guass-Bonnet error of {}", th_hat_sum - targetsum);
 }
 
   /**

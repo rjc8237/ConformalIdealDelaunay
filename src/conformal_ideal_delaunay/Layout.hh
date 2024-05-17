@@ -360,8 +360,8 @@ void connect_to_singularities(OverlayMesh<Scalar>& m_o, const std::vector<int>& 
 template <typename Scalar>
 void triangulate_polygon_mesh(Mesh<Scalar>& m, const std::vector<Scalar>& u, const std::vector<Scalar>& v, std::vector<int>& f_labels){
     int n_f0 = m.n_faces();
-    spdlog::debug("initial f size: {}", n_f0);
-    spdlog::debug("initial he size: {}", m.n.size());
+    spdlog::info("initial f size: {}", n_f0);
+    spdlog::info("initial he size: {}", m.n.size());
     for(int f = 0; f < n_f0; f++){
         int n_f = m.n_faces();
         int h0 = m.h[f];
@@ -473,7 +473,7 @@ void trim_open_branch(OverlayMesh<Scalar>& m_o, std::vector<int>& f_labels, std:
       }
     }
   }
-  spdlog::debug("#trimmed: {}", n_trimmed);
+  spdlog::info("#trimmed: {}", n_trimmed);
 }
 
 template <typename Scalar>
