@@ -18,6 +18,7 @@ message(STATUS "Third-party (external): creating target 'spdlog::spdlog'")
 include(FetchContent)
 FetchContent_Declare(
     spdlog
+  SYSTEM
     GIT_REPOSITORY https://github.com/gabime/spdlog.git
     GIT_TAG        v1.9.2
 )
