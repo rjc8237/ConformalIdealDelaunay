@@ -439,11 +439,13 @@ static
 void build_face_maps(OverlayMesh<Scalar>& mo, std::vector<int>& Fn_to_F){
     
     Fn_to_F = std::vector<int>(mo.n_faces(), -1);
+    char boundary_edge = ORIGINAL_EDGE;
+    char interior_edge = CURRENT_EDGE;
     
     // start from the face of halfedge h and do a breath first search to reach as
     // many faces as possible while only going across CURRENT_EDGE
     // the vector `compo` contains all sub-faces that correspoinding to the same original face
-    auto flood_fill = [](OverlayMesh<Scalar>& mo, int h, std::vector<int>& compo){
+    auto flood_fill = [&interior_edge](OverlayMesh<Scalar>& mo, int h, std::vector<int>& compo){
         compo.clear();
         auto done = std::vector<bool>(mo.n_faces(), false);
         std::queue<int> Q; Q.push(h);
@@ -456,7 +458,7 @@ void build_face_maps(OverlayMesh<Scalar>& mo, std::vector<int>& Fn_to_F){
             int hi = h;
             do{
                 int hi_opp = mo.opp[hi];
-                if (mo.f[hi_opp] != -1 && !done[mo.f[hi_opp]] && mo.edge_type[hi] == CURRENT_EDGE)
+                if (mo.f[hi_opp] != -1 && !done[mo.f[hi_opp]] && mo.edge_type[hi] == interior_edge)
                 {
                     done[mo.f[hi_opp]] = true;
                     Q.push(hi_opp);
@@ -470,7 +472,7 @@ void build_face_maps(OverlayMesh<Scalar>& mo, std::vector<int>& Fn_to_F){
     };
     
     for(int i = 0; i < mo.n_halfedges(); i++){
-        if(mo.edge_type[i] == ORIGINAL_EDGE){
+        if(mo.edge_type[i] == boundary_edge){
             if(mo.origin[i] != mo.origin_of_origin[i]){
                 mo.origin_of_origin[i] = mo.origin[i];
             }
@@ -486,7 +488,7 @@ void build_face_maps(OverlayMesh<Scalar>& mo, std::vector<int>& Fn_to_F){
             int h1 = mo.h[fx];
             int hi = h1;
             do{
-                if(mo.edge_type[hi] != CURRENT_EDGE) break;
+                if(mo.edge_type[hi] != interior_edge) break;
                 hi = mo.n[hi];
             }while(hi != h1);
             int fi = mo.m0.f[mo.origin_of_origin[hi]];
