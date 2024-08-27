@@ -14,6 +14,8 @@ if (PROJECT_IS_TOP_LEVEL)
   option(LIBIGL_EMBREE              "Use EMBREE"         ON)
   option(USE_SUITESPARSE "Use suite sparse methods for matrix inversion" ON)
   set ( SUITESPARSE_ENABLE_PROJECTS "suitesparse_config;cholmod;spqr" )
+
+  option(USE_PYBIND "Generate pybindings"     ON)
 endif() 
 
 if (RENDER_TEXTURE)
@@ -33,10 +35,12 @@ endif()
 
 #set(LIBIGL_INCLUDE_DIR ${DIR_EXT}/libigl/include)
 #find_package(LIBIGL REQUIRED QUIET)
-add_compile_definitions(PYBIND)
+if (USE_PYBIND)
+    add_compile_definitions(PYBIND)
+    include(pybind11)
+endif{}
 include(eigen)
 include(libigl)
-include(pybind11)
 include(spdlog)
 find_package(MPFR REQUIRED QUIET)
 
@@ -69,15 +73,17 @@ target_include_directories(conformal_cpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_include_directories(conformal_cpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/util)
 
 # build pybind functions
-add_library(conformal_py MODULE
-  src/conformal_ideal_delaunay/Halfedge.cc
-  src/conformal_ideal_delaunay/OverlayMesh.cc
-  src/conformal_ideal_delaunay/BarycenterMapping.cc
-  src/conformal_ideal_delaunay/ConformalPybind.cpp
-  src/util/check_flip.cc
-)
-target_include_directories(conformal_py PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_include_directories(conformal_py PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/util)
+if (USE_PYBIND)
+    add_library(conformal_py MODULE
+      src/conformal_ideal_delaunay/Halfedge.cc
+      src/conformal_ideal_delaunay/OverlayMesh.cc
+      src/conformal_ideal_delaunay/BarycenterMapping.cc
+      src/conformal_ideal_delaunay/ConformalPybind.cpp
+      src/util/check_flip.cc
+    )
+    target_include_directories(conformal_py PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_include_directories(conformal_py PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/util)
+endif()
 
 if(USE_SUITESPARSE)
   include(suitesparse)
@@ -110,23 +116,26 @@ if(USE_SUITESPARSE)
     SuiteSparse::CHOLMOD
   )
 endif()
-target_link_libraries(conformal_py PUBLIC Eigen3::Eigen igl::core pybind11::module igl::predicates spdlog::spdlog ${MPFR_LIBRARIES})
-set_target_properties(conformal_py PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/py)
-set_target_properties(conformal_py PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}")
 
-if (MSVC)
-  set_target_properties(conformal_py PROPERTIES SUFFIX ".pyd")
-  
-  # need to copy dependent dlls to the same folder as conformal_py
-  get_target_property(other_libs conformal_py INTERFACE_LINK_LIBRARIES)
-  set(locations)
-  list(APPEND locations ${main_lib} ${other_libs})
-  foreach(location ${locations})
-    string(REGEX MATCH "^(.*)\\.[^.]*$" dummy ${location})
-    set(location "${CMAKE_MATCH_1}.dll")
-    if(EXISTS "${location}" AND location MATCHES "^.*\\.dll$")
-      add_custom_command(TARGET conformal_py POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${location}" $<TARGET_FILE_DIR:conformal_py>)
+if (USE_PYBIND)
+    target_link_libraries(conformal_py PUBLIC Eigen3::Eigen igl::core pybind11::module igl::predicates spdlog::spdlog ${MPFR_LIBRARIES})
+    set_target_properties(conformal_py PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/py)
+    set_target_properties(conformal_py PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}")
+
+    if (MSVC)
+      set_target_properties(conformal_py PROPERTIES SUFFIX ".pyd")
+      
+      # need to copy dependent dlls to the same folder as conformal_py
+      get_target_property(other_libs conformal_py INTERFACE_LINK_LIBRARIES)
+      set(locations)
+      list(APPEND locations ${main_lib} ${other_libs})
+      foreach(location ${locations})
+        string(REGEX MATCH "^(.*)\\.[^.]*$" dummy ${location})
+        set(location "${CMAKE_MATCH_1}.dll")
+        if(EXISTS "${location}" AND location MATCHES "^.*\\.dll$")
+          add_custom_command(TARGET conformal_py POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${location}" $<TARGET_FILE_DIR:conformal_py>)
+        endif()
+      endforeach()
+
     endif()
-  endforeach()
-
 endif()
