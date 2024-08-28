@@ -38,7 +38,7 @@ endif()
 if (USE_PYBIND)
     add_compile_definitions(PYBIND)
     include(pybind11)
-endif{}
+endif()
 include(eigen)
 include(libigl)
 include(spdlog)
@@ -87,10 +87,12 @@ endif()
 
 if(USE_SUITESPARSE)
   include(suitesparse)
-  target_link_libraries(conformal_py PRIVATE
-    SuiteSparse::SuiteSparseConfig
-    SuiteSparse::CHOLMOD
-  )
+  if (USE_PYBIND)
+      target_link_libraries(conformal_py PRIVATE
+        SuiteSparse::SuiteSparseConfig
+        SuiteSparse::CHOLMOD
+      )
+  endif()
   target_link_libraries(conformal_cpp PUBLIC
     SuiteSparse::SuiteSparseConfig
     SuiteSparse::CHOLMOD
@@ -101,8 +103,12 @@ if (RENDER_TEXTURE)
   add_compile_definitions(RENDER_TEXTURE)
   if (LIBIGL_EMBREE)
     add_compile_definitions(USE_EMBREE)
-    target_link_libraries(conformal_py PRIVATE igl::embree plot)
-  else()
+  endif()
+
+  if (USE_PYBIND)
+    if (LIBIGL_EMBREE)
+      target_link_libraries(conformal_py PRIVATE igl::embree)
+    endif()
     target_link_libraries(conformal_py PRIVATE plot)
   endif()
 endif()
@@ -112,9 +118,11 @@ if(USE_SUITESPARSE)
   target_link_libraries(conformal_cpp PRIVATE
     SuiteSparse::CHOLMOD
   )
-  target_link_libraries(conformal_py PRIVATE
-    SuiteSparse::CHOLMOD
-  )
+  if (USE_PYBIND)
+      target_link_libraries(conformal_py PRIVATE
+        SuiteSparse::CHOLMOD
+      )
+  endif()
 endif()
 
 if (USE_PYBIND)
