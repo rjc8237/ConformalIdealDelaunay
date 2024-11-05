@@ -141,6 +141,7 @@ namespace OverlayProblem
      */
     virtual bool flip_ccw(int _h, bool Ptolemy = true)
     {
+      // get local topology data for the edge
       int ha = _h;
       int hb = opp[_h];
 
@@ -150,7 +151,7 @@ namespace OverlayProblem
       int f0 = f[ha];
       int f1 = f[hb];
       if (f0 == f1)
-        return false;
+        return false; // cannot flip self adjacent face edge
 
       int h2 = n[ha];
       int h3 = n[h2];
@@ -170,6 +171,7 @@ namespace OverlayProblem
         }
       }
 
+      // compute the new edge length
       if (Ptolemy)
       {
         l[h0(_h)] = l[h1(_h)] = (l[e(h2)] * l[e(h4)] + l[e(h3)] * l[e(h5)]) / l[e(_h)];
@@ -184,15 +186,18 @@ namespace OverlayProblem
         Scalar l_ad = l[e(h4)];
         Scalar l_db = l[e(h5)];
 
+        // use standard trigonometric identities to compute cosine of the angle opposite the new edge
         Scalar tan_alpha_2 = compute_tan_half(l_bc, l_ab, l_ca);
         Scalar tan_delta_2 = compute_tan_half(l_db, l_ba, l_ad);
         Scalar tan_sum_2 = (tan_alpha_2 + tan_delta_2) / (1 - tan_alpha_2 * tan_delta_2);
         Scalar cos_sum = (1 - tan_sum_2 * tan_sum_2) / (1 + tan_sum_2 * tan_sum_2);
 
+        // apply law of cosines
         Scalar l_cd = sqrt(l_ad * l_ad + l_ca * l_ca - 2 * l_ad * l_ca * cos_sum);
         l[h0(_h)] = l[h1(_h)] = l_cd;
       }
 
+      // adjust local face topology for the flip
       out[to[hb]] = h4;
       out[to[ha]] = h2;
       f[h4] = f0;
@@ -226,7 +231,7 @@ namespace OverlayProblem
         current = n[current];
 
         iterations++;
-        if (iterations >= 100)
+        if (iterations >= n_halfedges())
         {
           printf("Could not compute Previous Halfedge of %i!\n", h);
           return h;
@@ -303,7 +308,7 @@ namespace OverlayProblem
      */
     OverlayMesh(const Mesh<Scalar> &m) : Mesh<Scalar>(), _m(m)
     {
-
+      // initialize connectivity with mesh connectivity
       this->n = _m.n;
       this->to = _m.to;
       this->f = _m.f;
@@ -311,14 +316,17 @@ namespace OverlayProblem
       this->opp = _m.opp;
       this->out = _m.out;
 
+      // save initial mesh
       m0 = m;
 
+      // precompute previous halfedge data
       this->prev = {};
       for (int h = 0; h < _m.n_halfedges(); h++)
       {
         this->prev.push_back(_m.compute_prev(h));
       }
 
+      // the first segment and origin of each halfedge is initially itself
       first_segment = {};
       origin = {};
       for (int h = 0; h < _m.n_halfedges(); h++)
@@ -328,20 +336,23 @@ namespace OverlayProblem
       }
       origin_of_origin = origin;
 
+    // all vertices are initially original vertices
       vertex_type = {};
-      // 0 == O, 1 == 0
+      // 0 == O, 1 == S
       for (int v = 0; v < _m.n_vertices(); v++)
       {
         vertex_type.push_back(ORIGINAL_VERTEX);
       }
 
+      // all edges are initially original and current
       edge_type = {};
       for (int he = 0; he < _m.n_halfedges(); he++)
       {
-        // O == OC, C == 1, O == 2
+        // OC == 0, C == 1, O == 2
         edge_type.push_back(ORIGINAL_AND_CURRENT_EDGE);
       }
 
+      // the initial segment barycentric coordinates are 0 and 1 for the endpoints
       seg_bcs = {};
       for (int e = 0; e < _m.n.size(); e++)
       {
@@ -356,14 +367,19 @@ namespace OverlayProblem
      */
     bool flip_ccw(int _h, bool Ptolemy = true)
     {
+      // do garbage collection if too many halfedges accumulated
       if (this->n.size() > SAFETY_LIMIT)
       {
         garbage_collection();
       }
+
+      // flip the underlying mesh edge first 
       if (_m.flip_ccw(_h, Ptolemy) == false)
       {
         return false;
       }
+
+      // flip the overlay edge (if not bypassing)
       if (!bypass_overlay)
         return o_flip_ccw(&_m, _h, Ptolemy);
       else
@@ -396,7 +412,7 @@ namespace OverlayProblem
     {
       while (vertex_type[this->to[_h]] != ORIGINAL_VERTEX)
       {
-        _h = this->n[this->opp[this->n[_h]]];
+        _h = this->n[this->opp[this->n[_h]]]; // all segment vertices are valence 4
       }
       return this->to[_h];
     }
@@ -431,11 +447,17 @@ namespace OverlayProblem
      */
     int next_segment(int _h)
     {
+      // handle degenerate cases
+      // FIXME: could be unnecessary
       if (valence(_h) <= 2)
       {
         return this->n[_h];
       }
+
+      // iterate around valence 4 vertex
       int cur = this->n[this->opp[this->n[_h]]];
+
+      // if original edge, keep iterating
       while (edge_type[this->e(cur)] == ORIGINAL_EDGE)
       {
         cur = this->n[this->opp[this->n[cur]]];
@@ -459,6 +481,7 @@ namespace OverlayProblem
         int v = this->to[current];
 
         // Next Segment
+        // FIXME: redundant with existing next segment code
         if (this->valence(current) <= 2)
         {
           current = this->n[current];
@@ -480,11 +503,14 @@ namespace OverlayProblem
      */
     int face_edge_count(int f)
     {
+      // get halfedge in face
       int start = this->h[f];
+      
+      // removed face case
       if (start == -1)
         return -1;
 
-      // Print every Halfedge of the Face
+      // iterate next until return to original halfedge
       int count = 0;
       int current = start;
       do
@@ -492,11 +518,13 @@ namespace OverlayProblem
         current = this->n[current];
         count++;
 
-        if (count >= 100)
+        if (count >= n_halfedges())
         {
-          return 100;
+          spdlog::warn("All halfedges seen in face {}", f);
+          return n_halfedges();
         }
       } while (current != start);
+
       return count;
     }
 
@@ -507,14 +535,15 @@ namespace OverlayProblem
      */
     int valence(int to_v)
     {
+      // degenerate valence 1 test
       if (this->n[to_v] == this->opp[to_v])
         return 1;
-      int result = 0;
 
-      // Start with one outgoing Edge
+      // start with one outgoing Edge
       int start = this->n[to_v];
 
-      // Iterate all outgoing Halfedges
+      // iterate all outgoing Halfedges
+      int result = 0;
       int current = start;
       int iterations = 0;
       do
@@ -523,9 +552,10 @@ namespace OverlayProblem
         result++;
 
         iterations++;
-        if (iterations >= 100)
+        if (count >= n_halfedges())
         {
-          return 100;
+          spdlog::warn("All halfedges adjacent to vertex {}", to_v);
+          return n_halfedges();
         }
       } while (current != start);
 
@@ -565,7 +595,7 @@ namespace OverlayProblem
      */
     int create_halfedge(int type, int o0, int o1, int oo0 = 0, int oo1 = 0)
     {
-
+      // double every addition for opposite halfedge
       int id = this->n_halfedges();
       this->n.push_back(-1);
       this->n.push_back(-1);
@@ -579,11 +609,9 @@ namespace OverlayProblem
       this->f.push_back(-1);
       this->f.push_back(-1);
 
+      // initialize opposite halfedge
       this->opp.push_back(id + 1);
       this->opp.push_back(id);
-
-      // first_segment.push_back(id);
-      // first_segment.push_back(id + 1);
 
       origin.push_back(o0);
       origin.push_back(o1);
@@ -613,48 +641,58 @@ namespace OverlayProblem
       std::vector<int> hmap(n_h);
       std::vector<int> fmap(n_f);
 
+      // map all vertex indices to contiguous undeleted vertex indices
       int vcount = 0;
       for (int i = 0; i < n_v; i++)
       {
+        // vertex exists: give new index
         if (this->out[i] >= 0)
         {
           vmap[i] = vcount;
           vcount++;
         }
+        // vertex deleted: map to null (-1)
         else
         {
           vmap[i] = -1;
         }
       }
 
+      // map all halfedge indices to contiguous undeleted halfedge indices
       int hcount = 0;
       for (int i = 0; i < n_h; i++)
       {
+        // halfedge exists: give new index
         if (this->n[i] >= 0)
         {
           hmap[i] = hcount;
           hcount++;
         }
+        // halfedge deleted: map to null (-1)
         else
         {
           hmap[i] = -1;
         }
       }
 
+      // map all face indices to contiguous undeleted face indices
       int fcount = 0;
       for (int i = 0; i < n_f; i++)
       {
+        // face exists: give new index
         if (this->h[i] >= 0)
         {
           fmap[i] = fcount;
           fcount++;
         }
+        // face deleted: map to null (-1)
         else
         {
           fmap[i] = -1;
         }
       }
 
+      // reindex vertex data
       for (int i = 0; i < n_v; i++)
       {
         if (vmap[i] >= 0)
@@ -663,6 +701,8 @@ namespace OverlayProblem
           vertex_type[vmap[i]] = vertex_type[i];
         }
       }
+      
+      // reindex halfedge data
       for (int i = 0; i < n_h; i++)
       {
         if (hmap[i] >= 0)
@@ -679,13 +719,19 @@ namespace OverlayProblem
           seg_bcs[hmap[i]] = seg_bcs[i];
         }
       }
+
+      // reindex face data
       for (int i = 0; i < n_f; i++)
       {
         if (fmap[i] >= 0)
           this->h[fmap[i]] = hmap[this->h[i]];
       }
+
+      // reindex underlying mesh halfedge overlay data
       for (size_t i = 0; i < first_segment.size(); i++)
         first_segment[i] = hmap[first_segment[i]];
+
+      // resize arrays to remove deleted elements
       this->out.resize(vcount);
       this->n.resize(hcount);
       this->prev.resize(hcount);
@@ -694,9 +740,7 @@ namespace OverlayProblem
       this->opp.resize(hcount);
       origin.resize(hcount);
       origin_of_origin.resize(hcount);
-      // resize seg_bcs
       seg_bcs.resize(hcount);
-
       this->h.resize(fcount);
       vertex_type.resize(vcount);
       edge_type.resize(hcount);
@@ -708,33 +752,47 @@ namespace OverlayProblem
     template <typename T>
     std::vector<T> interpolate_along_o(const std::vector<T> &x)
     {
+      // initialize with original vertex data
       std::vector<T> z = x;
+
+      // add array elements for the crossings
       int n_v = this->n_vertices();
       z.resize(n_v);
 
+      // fill in crossing data
+      // TODO: inefficient, could do in single pass of base halfedges 
       for (int v = 0; v < n_v; v++)
       {
         if (this->vertex_type[v] == SEGMENT_VERTEX && this->out[v] >= 0) // crossing vertex, not deleted
         {
+          // ensure starting on original edge
           int h = this->out[v];
-          if (edge_type[this->e(h)] != ORIGINAL_EDGE) // o edge
+          if (edge_type[this->e(h)] != ORIGINAL_EDGE) // c edge: iterate to o edge
             h = this->n[this->opp[h]];
-          if (edge_type[this->e(h)] != ORIGINAL_EDGE)
+          if (edge_type[this->e(h)] != ORIGINAL_EDGE) // still c edge: should be impossible
             spdlog::error("not every other edge surrounding a crossing is an original edge");
+
+          // get left and right iteration halfedges and segment length counts          
           int hl = h;
           int hr = this->opp[hl];
-          int nl = 1;
+          int nl = 1; // count initital halfedge on the left
           int nr = 0;
+
+          // iterate to last segment with counting
           while (this->vertex_type[this->to[hl]] != ORIGINAL_VERTEX)
           {
             hl = this->n[this->opp[this->n[hl]]];
             nl++;
           }
+
+          // iterate to first segment with counting
           while (this->vertex_type[this->to[hr]] != ORIGINAL_VERTEX)
           {
             hr = this->n[this->opp[this->n[hr]]];
             nr++;
           }
+
+          // linearly interpolate endpoint data using counts
           int vl = this->to[hl];
           int vr = this->to[hr];
           z[v] = z[vl] * (T(nr) / (nr + nl)) + z[vr] * (T(nl) / (nr + nl));
@@ -745,27 +803,34 @@ namespace OverlayProblem
     }
 
     /**
-     * Given data per triangle corner (halfedge) of the c-mesh (i.e. the Mesh, not the OverlayMesh), uniformly interpolate it onto all corners along c(and oc)-edges
+     * Given data per triangle corner (halfedge) of the c-mesh (i.e. the Mesh, not the OverlayMesh),
+     * uniformly interpolate it onto all corners along c(and oc)-edges
      */
     template <typename T>
     std::vector<T> interpolate_along_c(const std::vector<T> &x)
     {
+      // initialize mask of visited halfedges
       std::vector<bool> is_visited(this->n.size(), false);
 
+      // initialize vector for interpolated data
       std::vector<T> z(this->n.size());
 
+      // copy from c-mesh to last segments of the overlay-mesh
       int n_ch = x.size();
-      for (unsigned int i = 0; i < n_ch; i++) // copy from c-mesh to overlay-mesh
+      for (unsigned int i = 0; i < n_ch; i++)
       {
         z[this->last_segment(i)] = x[i];
         is_visited[this->last_segment(i)] = true;
       }
 
+      // propagate around original vertices from c/oc-segments onto o-segments
       int n_h = this->n_halfedges();
-      for (int h = 0; h < n_h; h++) // propagate around vertices from c/oc-segments onto o-segments
+      for (int h = 0; h < n_h; h++)
       {
-        if (this->n[h] >= 0 && vertex_type[this->to[h]] == ORIGINAL_VERTEX && edge_type[this->e(h)] != ORIGINAL_EDGE) // c or oc edge before original vertex -> has valid value
+        // existing c or oc edge before original vertex -> has valid value
+        if (this->n[h] >= 0 && vertex_type[this->to[h]] == ORIGINAL_VERTEX && edge_type[this->e(h)] != ORIGINAL_EDGE)
         {
+          // copy corner data clockwise until reach next c or oc edge
           int hc = h;
           while (true)
           {
@@ -778,39 +843,55 @@ namespace OverlayProblem
         }
       }
 
+      // interpolate onto crossing vertices
+      // TODO: inefficient, could do in single pass of base halfedges 
       int n_v = this->n_vertices();
       for (int v = 0; v < n_v; v++)
       {
         if (this->vertex_type[v] == SEGMENT_VERTEX && this->out[v] >= 0) // crossing vertex, not deleted
         {
+          // ensure starting on current edge
           int h = this->out[v];
           if (edge_type[this->e(h)] == ORIGINAL_EDGE)
             h = this->n[this->opp[h]];
+
+          // initialize iteration halfedges and counts
           int hl = h;
           int hr = this->opp[hl];
           int hopp = hr;
-          int nl = 1;
+          int nl = 1; // count starting halfedge on the left
           int nr = 0;
+
+          // iterate to last segment with counting
           while (this->vertex_type[this->to[hl]] != ORIGINAL_VERTEX)
           {
             hl = next_segment(hl);
             nl++;
           }
+
+          // iterate to first segment with counting
           while (this->vertex_type[this->to[hr]] != ORIGINAL_VERTEX)
           {
             hr = next_segment(hr);
             nr++;
           }
-          int h0 = this->prev[h];
-          int h1 = this->prev[this->opp[hr]];
-          int h2 = this->prev[this->opp[hl]];
-          int h3 = this->opp[this->n[hopp]];
-          int h4 = this->opp[this->n[h3]];
+
+          // get halfedges with known data (hl, hr, h1, h2) and data to interpolate (h0, h3, h4, hopp)
+          int h0 = this->prev[h]; // points to crossing on left
+          int h1 = this->prev[this->opp[hr]]; // points to base original vertex on left
+          int h2 = this->prev[this->opp[hl]]; // points to tip original vertex on right
+          int h3 = this->opp[this->n[hopp]]; // points to crossing on right
+          int h4 = this->opp[this->n[h3]]; // points to crossing on left
+
+          // interpolate on the left
           z[h0] = z[hl] * (T(nr) / (nr + nl)) + z[h1] * (T(nl) / (nr + nl));
           z[h4] = z[h0];
+
+          // interpolate on the right 
           z[h3] = z[h2] * (T(nr) / (nr + nl)) + z[hr] * (T(nl) / (nr + nl));
           z[hopp] = z[h3];
 
+          // mark halfedges on crossing as visited
           is_visited[h0] = is_visited[h4] = is_visited[h3] = is_visited[hopp] = true;
         }
       }
