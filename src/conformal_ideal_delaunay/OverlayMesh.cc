@@ -629,8 +629,8 @@ void OverlayProblem::OverlayMesh<Scalar>::update_bc_intersection(Mesh<Scalar>* _
     {
         if (lambdas[i] >= lambdas[i + 1])
         {   
-            spdlog::debug("lambda error: {}, {}", lambdas[i], lambdas[i+1]);
-            bypass_overlay = true;
+            spdlog::warn("lambda error: {}, {}", lambdas[i], lambdas[i+1]);
+            //bypass_overlay = true;
         }
     }
     /////////////////////
