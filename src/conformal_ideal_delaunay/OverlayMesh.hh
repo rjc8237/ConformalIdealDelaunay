@@ -518,10 +518,10 @@ namespace OverlayProblem
         current = this->n[current];
         count++;
 
-        if (count >= n_halfedges())
+        if (count >= this->n_halfedges())
         {
           spdlog::warn("All halfedges seen in face {}", f);
-          return n_halfedges();
+          return this->n_halfedges();
         }
       } while (current != start);
 
@@ -552,10 +552,10 @@ namespace OverlayProblem
         result++;
 
         iterations++;
-        if (count >= n_halfedges())
+        if (result >= this->n_halfedges())
         {
           spdlog::warn("All halfedges adjacent to vertex {}", to_v);
-          return n_halfedges();
+          return this->n_halfedges();
         }
       } while (current != start);
 
