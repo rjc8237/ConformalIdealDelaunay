@@ -492,7 +492,13 @@ public:
       solve_start = std::clock();
 
 #ifdef USE_SUITESPARSE
+
+#ifdef WITH_MPFR
+      Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
+#else
       Eigen::CholmodSupernodalLLT<Eigen::SparseMatrix<Scalar>>  solver;
+#endif
+
 #else
       Eigen::SimplicialLDLT<Eigen::SparseMatrix<Scalar>> solver;
 #endif
