@@ -1670,6 +1670,83 @@ FV_to_double(
     return m;
 }
 
+/**
+ * Convert triangle mesh in V, F format to halfedge structure.
+ *
+ * @param F dim #f*3 matrix, each row corresponds to three vertex ids of each facet
+ * @return m, Mesh data structure, for details check OverlayMesh.hh
+ */
+template <typename Scalar>
+static
+Mesh<Scalar>
+FE_to_double(const std::vector<std::vector<int>>& F)
+{
+    Mesh<Scalar> m;
+
+    // Build the NOB representation from the input connectivity
+    std::vector<int> next_he;
+    std::vector<int> opp;
+    std::vector<int> bnd_loops;
+    FE_to_NOB(F, next_he, opp, bnd_loops);
+
+    // Build the connectivity arrays from the NOB arrays
+    Connectivity C;
+    NOB_to_connectivity(next_he, opp, bnd_loops, C);
+
+    // If there is no boundary, create a mesh with trivial reflection information
+    if (bnd_loops.size() == 0)
+    {
+        int n_v = C.out.size();
+        int n_he = C.n.size();
+
+        // Create trivial reflection information
+        std::vector<char> type(n_he, 0);
+        std::vector<int> R(n_he, 0);
+
+        // Build uniform
+        std::vector<Scalar> l(n_he, 1.);
+
+
+        // Create a halfedge structure for the mesh
+        m.n = C.n;
+        m.to = C.to;
+        m.f = C.f;
+        m.h = C.h;
+        m.out = C.out;
+        m.opp = C.opp;
+        m.type = type;
+        m.type_input = type;
+        m.R = R;
+        m.l = l;
+        m.v_rep = range(0, n_v);
+        m.fixed_dof = std::vector<bool>(n_v, false);
+        m.fixed_dof[0] = true;
+
+        Scalar pi;
+#ifdef WITH_MPFR
+        if (std::is_same<Scalar, mpfr::mpreal>::value)
+            pi = Scalar(mpfr::const_pi());
+        else
+            pi = Scalar(M_PI);
+#else
+        pi = Scalar(M_PI);
+#endif
+        int double_genus = 2 - (m.n_vertices() - m.n_edges() + m.n_faces());
+        Scalar targetsum = pi * (2 * m.n_vertices() - 2 * (2 - double_genus));
+        m.Th_hat = std::vector<Scalar>(n_v, targetsum / n_v); //uniform
+
+    }
+    // If there is boundary, create a double tufted cover with a reflection map
+    else
+    {
+      spdlog::error("Boundary not implemented");
+    }
+
+    // Check Gauss-Bonnet error
+    GaussBonnetCheck(m);
+    return m;
+}
+
 }
 
 /**

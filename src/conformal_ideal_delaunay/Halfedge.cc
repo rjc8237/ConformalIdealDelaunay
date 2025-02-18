@@ -32,6 +32,8 @@
 
 #include "Halfedge.hh"
 #include <Eigen/Sparse>
+#include <spdlog/spdlog.h>
+
 
 
 void FV_to_NOB(const std::vector<std::vector<int>> &F,
@@ -201,6 +203,122 @@ void FV_to_NOB(const Eigen::MatrixXi &F,
 
     // Run FV_to_NOB method
     FV_to_NOB(F_vec, next_he, opp, bnd_loops, vtx_reindex, corner_to_he, he_to_corner);
+}
+
+void FE_to_NOB(const std::vector<std::vector<int>> &F,
+               std::vector<int> &next_he,
+               std::vector<int> &opp,
+               std::vector<int> &bnd_loops)
+{
+    spdlog::set_level(spdlog::level::debug);
+
+    // Get the cumulative sum of the number of halfedges per face
+    int n_f = F.size();
+    int n_he = 0;
+    std::vector<int> F_he_cumsum(n_f);
+    for (int i = 0; i < n_f; ++i)
+    {
+        n_he += F[i].size();
+        F_he_cumsum[i] = n_he;
+    }
+    spdlog::debug("{} faces and {} halfedges", n_f, n_he);
+
+    // Create a list of indices of halfedges per face, sequentially numbered, not including
+    // boundary-loop faces
+    std::vector<std::vector<int>> F_he(n_f);
+    F_he[0] = range(0, F_he_cumsum[0]);
+    for (int i = 1; i < n_f; ++i)
+    {
+        F_he[i] = range(F_he_cumsum[i-1], F_he_cumsum[i]);
+    }
+
+    // Create the per face next halfedge map
+    std::vector<std::vector<int>> F_n(n_f);
+    for (int i = 0; i < n_f; ++i)
+    {
+        F_n[i] = std::vector<int>(F_he[i].size());
+        for (int j = 0; j < F_he[i].size()-1; ++j)
+        {
+            F_n[i][j] = F_he[i][j+1];
+        }
+        F_n[i][F_he[i].size()-1] = F_he[i][0];
+    }
+
+    // Create the next halfedge map (without boundary-loop halfedges)
+    next_he.clear();
+    next_he.reserve(n_he);
+    flatten<int>(F_n, next_he);
+
+    // map halfedges to edges
+    std::vector<int> he2e = {};
+    he2e.reserve(n_he);
+    flatten<int>(F, he2e);
+
+    // map edges to halfedges, with -1 for boundary halfedges
+    int num_halfedges = n_he;
+    int num_edges = -1;
+    for (const auto& face : F)
+    {
+        for (int e : face)
+        {
+            num_edges = std::max<int>(num_edges, e + 1);
+        }
+    }
+    Eigen::MatrixXi e2he = Eigen::MatrixXi::Constant(num_edges, 2, -1);
+    for (int hij = 0; hij < num_halfedges; ++hij)
+    {
+        int eij = he2e[hij];
+        spdlog::debug("halfedge {} in edge {}", hij, eij);
+        if (e2he(eij, 0) == -1)
+        {
+            e2he(eij, 0) = hij;
+        }
+        else if (e2he(eij, 1) == -1)
+        {
+            e2he(eij, 1) = hij;
+        }
+        else
+        {
+            spdlog::error("edge {} seen more than twice", eij);
+            // TODO Runtime error for nonmanifold edge
+        }
+    }
+    spdlog::debug("{} edges", num_edges);
+
+    // build opp with -1 for unpaired halfedges  
+    opp = std::vector(n_he, -1);
+    for (int eij = 0; eij < num_edges; ++eij)
+    {
+        int hij = e2he(eij, 0); // first halfedge always defined
+        int hji = e2he(eij, 1); // second halfedge may be undefined for boundary
+        opp[hij] = hji;
+        if (hji != -1)
+        {
+            opp[hji] = hij;
+        }
+    }
+    spdlog::info("{}, {}, {}, {}, {}, {}", opp[0], opp[1], opp[2], opp[3], opp[4], opp[5]);
+            
+    // now add boundary loop halfedges
+    std::vector<int> next_he_ext;
+    std::vector<int> opp_ext;
+    build_boundary_loops(next_he, opp, next_he_ext, opp_ext);
+    next_he = next_he_ext;
+    opp = opp_ext;
+    spdlog::debug("{} halfedges after doubling", next_he.size());
+    
+    // build faces (with boundary) and boundary loops
+    std::vector<std::vector<int>> faces;
+    build_orbits(next_he, faces);
+    bnd_loops = {};
+    for (int f = 0; f < n_f; ++f)
+    {
+        if (faces[f][0] > n_he)
+        {
+            bnd_loops.push_back(f);
+        }
+    }
+    spdlog::debug("{} boundary loops", bnd_loops.size());
 }
 
 void build_boundary_loops(const std::vector<int> &next_he,

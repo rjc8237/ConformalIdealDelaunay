@@ -75,6 +75,20 @@ void FV_to_NOB(const Eigen::MatrixXi &F,
                std::vector<std::pair<int, int>> &he_to_corner);
 
 /**
+* Convert from matrix (F) mesh representation encoding face edge adjacency to NOB data structure
+* 
+* @param F, #f*n, each row represents the edge id (ccw) of current face
+* @param (N)next_he, size #h vector, next halfedge id
+* @param (O)opp, size #h vector, opposite halfedge id
+* @param (B)bnd_loops, collection of boundary face ids.
+* @return void
+*/
+void FE_to_NOB(const std::vector<std::vector<int>> &F,
+               std::vector<int> &next_he,
+               std::vector<int> &opp,
+               std::vector<int> &bnd_loops);
+
+/**
 * Extend next_he and opp to add extra halfedges along the boundaries.
 * 
 * @param next_he, next-halfedge map same length as opp
