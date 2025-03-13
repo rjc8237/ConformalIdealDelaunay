@@ -222,7 +222,10 @@ void compute_l_from_vertices(const Connectivity &C,
         
         // Compute the length of the halfedge from the displacement vector
         Eigen::Vector3d vec_disp = v_to - v_fr;
-        l[he] = sqrt(vec_disp.dot(vec_disp));
+        Scalar a = Scalar(vec_disp[0]);
+        Scalar b = Scalar(vec_disp[1]);
+        Scalar c = Scalar(vec_disp[2]);
+        l[he] = sqrt(a * a + b * b + c * c);
     }
 }
 
