@@ -269,13 +269,21 @@ void compute_l_from_uv(const Eigen::MatrixXd &uv,
         int face_vertex_index = he_to_corner[he].second;
         int vn = F_uv(face_index, (face_vertex_index + 1) % 3);
         int vp = F_uv(face_index, (face_vertex_index + 2) % 3);
-        Eigen::Vector2d uv_to = uv.row(vn);
-        Eigen::Vector2d uv_fr = uv.row(vp);
+        Eigen::VectorXd uv_to = uv.row(vn);
+        Eigen::VectorXd uv_fr = uv.row(vp);
         
         // Compute the length of the halfedge from the displacement vector
-        Scalar a = Scalar(uv_to[0]) - Scalar(uv_fr[0]);
-        Scalar b = Scalar(uv_to[1]) - Scalar(uv_fr[1]);
-        l[he] = sqrt(a * a + b * b);
+        if (uv_to.size() == 2)
+        {
+            Scalar a = Scalar(uv_to[0]) - Scalar(uv_fr[0]);
+            Scalar b = Scalar(uv_to[1]) - Scalar(uv_fr[1]);
+            l[he] = sqrt(a * a + b * b);
+        } else {
+            Scalar a = Scalar(uv_to[0]) - Scalar(uv_fr[0]);
+            Scalar b = Scalar(uv_to[1]) - Scalar(uv_fr[1]);
+            Scalar c = Scalar(uv_to[2]) - Scalar(uv_fr[2]);
+            l[he] = sqrt(a * a + b * b + c * c);
+        }
     }
 }
 
