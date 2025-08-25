@@ -178,6 +178,8 @@ compute_layout(Mesh<Scalar> &m, const std::vector<Scalar> &u, std::vector<bool>&
     Scalar l1 = exp((phi[hn] - phi[hp]) / 2) * (m.l[hn] / m.l[h]);
     Scalar l2 = exp((phi[hn] - phi[h]) / 2) * (m.l[hp] / m.l[h]);
     Eigen::Matrix<Scalar, 1, 2> pn = p1 + (p2 - p1) * (1 + square(l2 / l0) - square(l1 / l0)) / 2 + perp(p2 - p1) * 2 * area_from_len(1.0, l1 / l0, l2 / l0);
+    assert(!isnan(pn[0]));
+    assert(!isnan(pn[1]));
     _u[hn] = pn[0];
     _v[hn] = pn[1];
     int hno = m.opp[hn];
