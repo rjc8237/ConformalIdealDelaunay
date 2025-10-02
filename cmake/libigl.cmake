@@ -8,6 +8,6 @@ include(FetchContent)
   SYSTEM
   GIT_REPOSITORY https://github.com/libigl/libigl.git
   #GIT_TAG 5067c8b7eb85343af8f53cdeb0bfd1957ad59e04
-  GIT_TAG v2.4.0
+  GIT_TAG v2.6.0
 )
 FetchContent_MakeAvailable(libigl)
