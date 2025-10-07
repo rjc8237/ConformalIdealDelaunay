@@ -32,6 +32,7 @@
 #ifndef SAMPLE_HH
 #define SAMPLE_HH
 
+#undef USE_EMBREE # deprecated
 #ifdef USE_EMBREE
 #include <igl/embree/unproject_onto_mesh.h>
 #else

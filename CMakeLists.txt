@@ -10,8 +10,6 @@ if (PROJECT_IS_TOP_LEVEL)
   option(LIBIGL_PREDICATES          "Use Predicates"     ON)
 
   option(RENDER_TEXTURE             "Render results"     ON)
-  # enable embree for speeding up texture rendering
-  option(LIBIGL_EMBREE              "Use EMBREE"         ON)
   option(USE_SUITESPARSE "Use suite sparse methods for matrix inversion" ON)
   set ( SUITESPARSE_ENABLE_PROJECTS "suitesparse_config;cholmod;spqr" )
 
@@ -101,14 +99,8 @@ endif()
 
 if (RENDER_TEXTURE)
   add_compile_definitions(RENDER_TEXTURE)
-  if (LIBIGL_EMBREE)
-    add_compile_definitions(USE_EMBREE)
-  endif()
 
   if (USE_PYBIND)
-    if (LIBIGL_EMBREE)
-      target_link_libraries(conformal_py PRIVATE igl::embree)
-    endif()
     target_link_libraries(conformal_py PRIVATE plot)
   endif()
 endif()
