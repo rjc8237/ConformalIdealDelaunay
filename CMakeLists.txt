@@ -22,7 +22,7 @@ if (RENDER_TEXTURE)
 
   option(LIBIGL_OPENGL            "Use OpenGL"         ON)
   option(LIBIGL_GLFW              "Use GLFW"           ON)
-  option(LIBIGL_PNG               "Use png"         ON)
+  option(LIBIGL_STB               "Use png"         ON)
 
   add_library(plot src/util/plot.cc)
   target_link_libraries(plot PUBLIC igl::core igl::glfw)
