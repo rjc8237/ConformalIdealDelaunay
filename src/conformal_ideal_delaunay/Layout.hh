@@ -46,7 +46,7 @@
 
 // get the number of cut_edges touching to[h0]
 static
-int count_valence(const std::vector<int> &n, const std::vector<int> &opp, int h0, std::vector<bool> is_cut)
+int count_valence(const std::vector<int> &n, const std::vector<int> &opp, int h0, std::vector<bool>& is_cut)
 {
   int valence = 0;
   int hi = opp[n[h0]];
