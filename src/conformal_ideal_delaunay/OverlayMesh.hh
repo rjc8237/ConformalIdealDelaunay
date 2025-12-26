@@ -67,7 +67,7 @@
 #define CURRENT_EDGE 1
 #define ORIGINAL_AND_CURRENT_EDGE 2
 
-static const int SAFETY_LIMIT = 9999999;
+static const int SAFETY_LIMIT = 1000000000;
 
 namespace OverlayProblem
 {
