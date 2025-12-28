@@ -286,7 +286,7 @@ void FE_to_NOB(const std::vector<std::vector<int>> &F,
     spdlog::debug("{} edges", num_edges);
 
     // build opp with -1 for unpaired halfedges  
-    opp = std::vector(n_he, -1);
+    opp = std::vector<int>(n_he, -1);
     for (int eij = 0; eij < num_edges; ++eij)
     {
         int hij = e2he(eij, 0); // first halfedge always defined
