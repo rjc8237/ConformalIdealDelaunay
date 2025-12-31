@@ -287,7 +287,7 @@ namespace OverlayProblem
     std::vector<int> vertex_type; // The Vertex-Type of the Vertex (0 = Current, 1 = Overlay)
     std::vector<int> edge_type;   // The Type of the O-Edge, O == 0, C == 1, OC == 2
 
-    std::vector<std::vector<Scalar>> seg_bcs; // seg_bcs[h] := bc of to[h] on origin[h]
+    std::vector<std::array<Scalar, 2>> seg_bcs; // seg_bcs[h] := bc of to[h] on origin[h]
 
     Mesh<Scalar> m0;             // init mesh before any changes
     Mesh<Scalar> _m;             // current non-overlay mesh
@@ -315,12 +315,22 @@ namespace OverlayProblem
       this->h = _m.h;
       this->opp = _m.opp;
       this->out = _m.out;
+      int num_halfedges = _m.n_halfedges();
+      int num_vertices = _m.n_vertices();
+      int num_faces = _m.n_faces();
+      this->n.reserve(5 * num_halfedges);
+      this->to.reserve(5 * num_halfedges);
+      this->f.reserve(5 * num_halfedges);
+      this->opp.reserve(5 * num_halfedges);
+      this->h.reserve(5 * num_faces);
+      this->out.reserve(5 * num_vertices);
 
       // save initial mesh
       m0 = m;
 
       // precompute previous halfedge data
       this->prev = {};
+      this->prev.reserve(5 * num_halfedges);
       for (int h = 0; h < _m.n_halfedges(); h++)
       {
         this->prev.push_back(_m.compute_prev(h));
@@ -329,15 +339,19 @@ namespace OverlayProblem
       // the first segment and origin of each halfedge is initially itself
       first_segment = {};
       origin = {};
+      first_segment.reserve(5 * num_halfedges);
+      origin.reserve(5 * num_halfedges);
       for (int h = 0; h < _m.n_halfedges(); h++)
       {
         first_segment.push_back(h);
         origin.push_back(h);
       }
       origin_of_origin = origin;
+      origin_of_origin.reserve(5 * num_halfedges);
 
     // all vertices are initially original vertices
       vertex_type = {};
+      vertex_type.reserve(5 * num_vertices);
       // 0 == O, 1 == S
       for (int v = 0; v < _m.n_vertices(); v++)
       {
@@ -346,6 +360,7 @@ namespace OverlayProblem
 
       // all edges are initially original and current
       edge_type = {};
+      edge_type.reserve(5 * num_halfedges);
       for (int he = 0; he < _m.n_halfedges(); he++)
       {
         // OC == 0, C == 1, O == 2
@@ -354,9 +369,10 @@ namespace OverlayProblem
 
       // the initial segment barycentric coordinates are 0 and 1 for the endpoints
       seg_bcs = {};
+      seg_bcs.reserve(5 * num_halfedges);
       for (int e = 0; e < _m.n.size(); e++)
       {
-        seg_bcs.push_back(std::vector<Scalar>{0.0, 1.0});
+        seg_bcs.push_back({0.0, 1.0});
       }
     }
 
@@ -623,8 +639,8 @@ namespace OverlayProblem
       edge_type.push_back(type);
 
       // add new bcs
-      seg_bcs.push_back(std::vector<Scalar>{0.0, 1.0});
-      seg_bcs.push_back(std::vector<Scalar>{0.0, 1.0});
+      seg_bcs.push_back({0.0, 1.0});
+      seg_bcs.push_back({0.0, 1.0});
 
       return id;
     }
@@ -1096,7 +1112,7 @@ namespace OverlayProblem
       int current_seg = first_segment[_h];
       while (vertex_type[this->to[current_seg]] != ORIGINAL_VERTEX)
       {
-        std::vector<Scalar> tmp = seg_bcs[current_seg];
+        std::array<Scalar, 2> tmp = seg_bcs[current_seg];
         tmp[0] *= Scalar(lbc / (lab * lca)); // A in ABC
         tmp[1] *= Scalar(lca / (lab * lbc)); // B in ABC
         Scalar sum = tmp[0] + tmp[1];
@@ -1111,7 +1127,7 @@ namespace OverlayProblem
       int cnt = lambdas.size() - 1;
       while (vertex_type[this->to[current_seg]] != ORIGINAL_VERTEX)
       {
-        std::vector<Scalar> tmp = seg_bcs[current_seg];
+        std::array<Scalar, 2> tmp = seg_bcs[current_seg];
         tmp[0] *= Scalar(lad / (lba * ldb)); // B in BAD
         tmp[1] *= Scalar(ldb / (lba * lad)); // A in BAD
         Scalar sum = tmp[0] + tmp[1];

@@ -158,8 +158,8 @@ bool OverlayProblem::OverlayMesh<Scalar>::o_flip_ccw(Mesh<Scalar>* _m, int _h, b
             origin[diag_seg] = _m->opp[_h0];
             origin[this->opp[diag_seg]] = _h0;
 
-            seg_bcs[diag_seg] = std::vector<Scalar>{0.0, 1.0};
-            seg_bcs[this->opp[diag_seg]] = std::vector<Scalar>{0.0, 1.0};
+            seg_bcs[diag_seg] = {0.0, 1.0};
+            seg_bcs[this->opp[diag_seg]] = {0.0, 1.0};
 
             int _f0 = _m->f[_h];
             int _f1 = _m->f[_m->opp[_h]];
@@ -552,7 +552,7 @@ void OverlayProblem::OverlayMesh<Scalar>::update_bc_intersection(Mesh<Scalar>* _
 
         if (origin[h_top] == _hjk)
         {
-            std::vector<Scalar> tmp = seg_bcs[h_top];
+            std::array<Scalar, 2> tmp = seg_bcs[h_top];
             if (Ptolemy)
             {
                 tmp[0] *= lca / (lab * lbc); // B in ABC
@@ -565,7 +565,7 @@ void OverlayProblem::OverlayMesh<Scalar>::update_bc_intersection(Mesh<Scalar>* _
         }
         else if (origin[h_top] == _hki)
         {
-            std::vector<Scalar> tmp = seg_bcs[h_top];
+            std::array<Scalar, 2> tmp = seg_bcs[h_top];
             if (Ptolemy)
             { 
                 tmp[0] *= lab / (lbc * lca); // C in ABC
@@ -579,7 +579,7 @@ void OverlayProblem::OverlayMesh<Scalar>::update_bc_intersection(Mesh<Scalar>* _
 
         if (origin[h_bottom] == _hil)
         {
-            std::vector<Scalar> tmp = seg_bcs[h_bottom];
+            std::array<Scalar, 2> tmp = seg_bcs[h_bottom];
             if (Ptolemy)
             {
                 tmp[0] *= ldb / (lad * lba); // A in BAD
@@ -592,7 +592,7 @@ void OverlayProblem::OverlayMesh<Scalar>::update_bc_intersection(Mesh<Scalar>* _
         }
         else if (origin[h_bottom] == _hlj)
         {
-            std::vector<Scalar> tmp = seg_bcs[h_bottom];
+            std::array<Scalar, 2> tmp = seg_bcs[h_bottom];
             if (Ptolemy)
             {
                 tmp[0] *= lba / (ldb * lad); // D in BAD
@@ -648,7 +648,7 @@ void OverlayProblem::OverlayMesh<Scalar>::update_bc_intersection(Mesh<Scalar>* _
     h = first_segment[_h];
     for (int i = 0; i < cnt; i++)
     {
-        std::vector<Scalar> tmp{1 - lambdas[i], lambdas[i]};
+        std::array<Scalar, 2> tmp{1 - lambdas[i], lambdas[i]};
         if (Ptolemy)
         {
             tmp[0] *= Scalar(lca * lab / lbc); // A in ABC
@@ -660,12 +660,12 @@ void OverlayProblem::OverlayMesh<Scalar>::update_bc_intersection(Mesh<Scalar>* _
         seg_bcs[h] = tmp;
         h = next_segment(h);
     }
-    seg_bcs[h] = std::vector<Scalar>{0.0, 1.0};
+    seg_bcs[h] = {0.0, 1.0};
 
     h = first_segment[_m->opp[_h]];
     for (int i = 0; i < cnt; i++)
     {
-        std::vector<Scalar> tmp{lambdas[cnt - 1 - i], 1 - lambdas[cnt - 1 - i]};
+        std::array<Scalar, 2> tmp{lambdas[cnt - 1 - i], 1 - lambdas[cnt - 1 - i]};
         if (Ptolemy)
         {
             tmp[0] *= Scalar(lba * ldb / lad); // B in BAD
@@ -677,7 +677,7 @@ void OverlayProblem::OverlayMesh<Scalar>::update_bc_intersection(Mesh<Scalar>* _
         seg_bcs[h] = tmp;
         h = next_segment(h);
     }
-    seg_bcs[h] = std::vector<Scalar>{0.0, 1.0};
+    seg_bcs[h] = {0.0, 1.0};
 }
 
 template<typename Scalar>
