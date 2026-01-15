@@ -442,12 +442,14 @@ void build_face_maps(OverlayMesh<Scalar>& mo, std::vector<int>& Fn_to_F){
     char boundary_edge = ORIGINAL_EDGE;
     char interior_edge = CURRENT_EDGE;
     
+    /*
+    std::vector<bool> done(mo.n_faces(), false);
+
     // start from the face of halfedge h and do a breath first search to reach as
     // many faces as possible while only going across CURRENT_EDGE
     // the vector `compo` contains all sub-faces that correspoinding to the same original face
-    auto flood_fill = [&interior_edge](OverlayMesh<Scalar>& mo, int h, std::vector<int>& compo){
+    auto flood_fill = [&interior_edge, &done](OverlayMesh<Scalar>& mo, int h, std::vector<int>& compo){
         compo.clear();
-        auto done = std::vector<bool>(mo.n_faces(), false);
         std::queue<int> Q; Q.push(h);
         done[mo.f[h]] = true;
         while (!Q.empty())
@@ -478,13 +480,14 @@ void build_face_maps(OverlayMesh<Scalar>& mo, std::vector<int>& Fn_to_F){
             }
         }
     }
+        */
     // go through all faces and pick any halfedge in that face
     // find all 'sibling' faces that belong to the same original face
-    for(int f = 0; f < mo.n_faces(); f++){
-        int h0 = mo.h[f];
-        std::vector<int> compo;
-        flood_fill(mo, h0, compo);
-        for(int fx: compo){
+    for(int fx = 0; fx < mo.n_faces(); fx++){
+        int h0 = mo.h[fx];
+        //std::vector<int> compo;
+        //flood_fill(mo, h0, compo);
+        //for(int fx: compo){
             int h1 = mo.h[fx];
             int hi = h1;
             do{
@@ -493,7 +496,7 @@ void build_face_maps(OverlayMesh<Scalar>& mo, std::vector<int>& Fn_to_F){
             }while(hi != h1);
             int fi = mo.m0.f[mo.origin_of_origin[hi]];
             Fn_to_F[fx] = fi;
-        }
+        //}
     }
 
 }
