@@ -127,7 +127,7 @@ void FV_to_NOB(const std::vector<std::vector<int>> &F,
     opp.resize(n_he);
     for (int he = 0; he < n_he; ++he)
     {
-        opp[he] = vv2he.coeffRef(head[he], tail[he]) - 1;
+        opp[he] = vv2he.coeff(head[he], tail[he]) - 1;
     }
 
     // Add boundary loop halfedges
@@ -171,12 +171,13 @@ void FV_to_NOB(const std::vector<std::vector<int>> &F,
     he_to_corner = std::vector<std::pair<int, int>>(n_he, std::make_pair(-1, -1));
     for (size_t i = 0; i < n_f; ++i)
     {
-        corner_to_he[i].resize(3);
-        for (size_t j = 0; j < 3; ++j)
+        int d = F[i].size();
+        corner_to_he[i].resize(d);
+        for (size_t j = 0; j < d; ++j)
         {
-            int vn = F[i][(j + 1)%3];
-            int vp = F[i][(j + 2)%3];
-            int he = vv2he.coeffRef(vn, vp) - 1;
+            int vn = F[i][(j + 1)%d];
+            int vp = F[i][(j + 2)%d];
+            int he = vv2he.coeff(vn, vp) - 1;
             corner_to_he[i][j] = he;
             he_to_corner[he] = std::make_pair(i, j);
         }
